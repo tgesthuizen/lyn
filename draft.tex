@@ -1,0 +1,84 @@
+\documentclass[12pt, a4paper]{article}
+
+\usepackage{generic-article}
+
+\author{Tim Gesthuizen}
+\title{Short Programming Project: A compiler for embedded systems}
+
+\begin{document}
+
+\maketitle
+
+\section{Motivation}
+
+Modern compilers tend to be very large projects that require lots of
+memory when being run.
+Only the quality of the generated code seems to be of importance.
+
+Other programming languages use a more dynamic model where developers
+can try new code and the REPL and then slowly build the programs
+source code from already proven to work snippets.
+In addition this kind of development has much shorter feedback loops
+and allows for more interactive and responsive debugging.
+On the other hand the ability to change definitions on the go imposes
+optimization barriers for the compiler and leads to performance
+penalties.
+
+This project experiments with writing a small compiler for an embedded
+system, possibly running on said embedded system, and enabling a
+hybrid of the two development forms.
+As embedded platforms often have a long waiting time for compiling and
+flashing the full software this would be benefitial for exploratory
+programming and aid with debugging.
+
+\section{Project definition and goals}
+
+Because the project was deemed rather ambitious it is split into
+stages which each will each result in a piece of software.
+
+Initially, the language to be compiled needs to be defined.
+The main goal of this project is to write a compiler in C++ that
+compiles this minimal language for the ARM architecture using the
+Thumb instruction set.
+Code must be compile- and runable on the  target platform\footnote{The
+  target platform is yet to be determined but can be any ARM-based
+  platform.}.
+It would be nice to get the compiler running on the target platform,
+but this might be too much work for the course.
+If there is even more time remaining it can be spent with analysis of
+how much ressources are used by the compiler, how good the generated
+code is, extending the compiled language or adding optimization
+passes.
+
+In order to keep track of the progress the following milestones for
+the main goal are defined:
+
+\begin{enumerate}
+\item Defining the target language
+\item The language is parsed by the compiler
+\item Semantic analysis is done by the compiler
+\item The code is translated into an intermediate representation by
+  the compiler
+\item Program code is generated from the intermediate representation
+\item A first working program was run on the target platform
+\item The compile-run process is streamlined
+\end{enumerate}
+
+For the optional goal the following milestones are defined:
+\begin{enumerate}
+\item Firmware code in C/C++ can be compiled for the target platform
+\item The backend of the compiler is altered to emit code into memory
+  in a runable form
+\item The compiler was successfully compiled for the target platform.
+\item The first program was compiled and run on the target platform
+\item The compile-run process is streamlined
+\end{enumerate}
+
+\section{Further information}
+
+Gunnar Kudrjavets is supervising the project.
+
+Regular meetings will be set up to report on the current status and
+adapt the scope of the project to the actual progress.
+
+\end{document}
