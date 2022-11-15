@@ -1,0 +1,137 @@
+\documentclass[a4paper, 11pt]{article}
+
+\title{Short Programming Project: Language definition}
+\author{Tim Gesthuizen}
+
+\usepackage{tabularx}
+\setlength{\parindent}{0ex}
+\setlength{\parskip}{1.5ex}
+
+\usepackage{listings}
+
+\begin{document}
+
+\maketitle
+
+\section{Grammar}
+
+The language is somewhat Scheme-like.
+However, as it has no built-in dynamic memory management at all
+constructs that require dynamic memory will not be available.
+Most notably, there are no built in data structures, nor function
+clojures.
+
+The language consists of the following expressions:\\[1.5ex]
+\begin{tabularx}{\linewidth}{lX}
+  \texttt{c} & Constant value\\
+  \texttt{x} & Variable references\\
+  \texttt{(f arg ...)} & Function application\\
+  \texttt{(lambda (params ...) body)} & Abstraction\\
+  \texttt{(let ((var val)...) expr)} & Let expressions:
+  Binds \texttt{val}s to the names \texttt{var}s for the duration of
+  \texttt{expr}\\
+  \texttt{(let lp ((var val) ...) expr)} & Calls a function lp with
+  parameters \texttt{var}s, initially bound to \texttt{val}s.
+  The \texttt{expr} may call \texttt{lp}.
+  This form allows to build loops.\\
+  \texttt{(begin e1 e2 ...)} & Evaluate the expressions in order and
+  return the result of the last one\\
+  \texttt{(if cond then expr1 else expr2)} & Defines a conditional
+  expression, evaluating \texttt{expr1} if \texttt{cond} is
+  \texttt{True}, \texttt{expr2} otherwise\\
+\end{tabularx}
+
+At the top level the following form is available:\\[1.5ex]
+\begin{tabularx}{\linewidth}{lX}
+  \texttt{(define (fun params ...) expr)} & Defines a function
+  \texttt{fun} with parameters named \texttt{params} and the body
+  \texttt{expr}.
+\end{tabularx}
+
+\section{Types}
+
+Every expression and binding has an associated type:\\[1.5ex]
+\begin{tabularx}{\linewidth}{lX}
+  \texttt{Int} & Integer value\\
+  \texttt{Bool} & Boolean Value. Either \texttt{True} or
+  \texttt{False}\\
+  \texttt{Unit} & Unit value\\
+  \texttt{Function(params, res)} & A function taking \texttt{params}
+  and returning \texttt{res}\\
+\end{tabularx}
+
+Note that, conveniently, all types fit in a single register of the
+processor.
+
+\section{Built-in functions}
+
+The following functions are built-in:\\[1.5ex]
+\begin{tabularx}{\linewidth}{l|l|X}
+  Name & Type & Description \\\hline
+  \texttt{+} & \texttt{Int} \rightarrow \texttt{Int} \rightarrow
+  \texttt{Int} & Adds two integers\\
+  \texttt{-} & \texttt{Int} \rightarrow \texttt{Int} \rightarrow
+  \texttt{Int} & Subtracts two integers\\
+  \texttt{*} & \texttt{Int} \rightarrow \texttt{Int} \rightarrow
+  \texttt{Int} & Multiplies two integers\\
+  \texttt{/} & \texttt{Int} \rightarrow \texttt{Int} \rightarrow
+  \texttt{Int} & Divides two integers\\
+  \texttt{\%} & \texttt{Int} \rightarrow \texttt{Int} \rightarrow
+  \texttt{Int} & Takes the remainder of two integers\\
+  \texttt{shl} & \texttt{Int} \rightarrow \texttt{Int} \rightarrow
+  \texttt{Int} & Shifts an integer to the left\\
+  \texttt{shr} & \texttt{Int} \rightarrow \texttt{Int} \rightarrow
+  \texttt{Int} & Shifts an integer to the right\\
+  \texttt{lor} & \texttt{Int} \rightarrow \texttt{Int} \rightarrow
+  \texttt{Int} & Calculates the logical or of two integers\\
+  \texttt{land} & \texttt{Int} \rightarrow \texttt{Int} \rightarrow
+  \texttt{Int} & Calculates the logical and of two integers\\
+  \texttt{=} & \texttt{Int} \rightarrow \texttt{Int} \rightarrow
+  \texttt{Bool} & Checks if two integers are equal\\
+  \texttt{!=} & \texttt{Int} \rightarrow \texttt{Int} \rightarrow
+  \texttt{Bool} & Checks if two integers are not equal\\
+  \texttt{<} & \texttt{Int} \rightarrow \texttt{Int} \rightarrow
+  \texttt{Bool} & Checks if an integer is less than another\\
+  \texttt{>} & \texttt{Int} \rightarrow \texttt{Int} \rightarrow
+  \texttt{Bool} & Checks if an integer is greater than another\\
+  \texttt{<=} & \texttt{Int} \rightarrow \texttt{Int} \rightarrow
+  \texttt{Bool} & Checks if an integer is less or equal to another\\
+  \texttt{>=} & \texttt{Int} \rightarrow \texttt{Int} \rightarrow
+  \texttt{Bool} & Checks if an integer is greater or equal to
+  another\\
+  \texttt{not} & \texttt{Bool} \rightarrow \texttt{Bool} & Negates a
+  boolean\\
+  \texttt{or} & \texttt{Bool} \rightarrow \texttt{Bool} &
+  \texttt{True} if any of the operands is \texttt{True}\\
+  \texttt{and} & \texttt{Bool} \rightarrow \texttt{Bool} &
+  \texttt{True} if all of the operands are \texttt{True}\\
+\end{tabularx}
+
+\section{Examples}
+
+The Fibonacci function, returning a number of the Fibonacci series by
+index.
+
+\begin{lstlisting}
+  (define (fib n)
+    (let lp ((a 1)
+             (b 1)
+             (n n))
+      (if (= n 0)
+          a
+          (lp b (+ a b) (- n 1)))))
+\end{lstlisting}
+
+The gcd function, returning the greatest common denominator of two
+numbers.
+
+\begin{lstlisting}
+  (define (gcd a b)
+    (let lp ((a a)
+             (b b))
+      (if (= b 0)
+          a
+          (lp b (/ a b)))))
+\end{lstlisting}
+
+\end{document}
