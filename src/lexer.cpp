@@ -31,21 +31,19 @@ yy::parser::symbol_type lexer::lex() {
     std::ungetc(c, file);
     if (result == "let") {
       return yy::parser::make_LET({tok_line, tok_col});
-    } else if (result == "lambda") {
-      return yy::parser::make_LAMBDA({tok_line, tok_col});
-    } else if (result == "if") {
-      return yy::parser::make_IF({tok_line, tok_col});
-    } else if (result == "then") {
-      return yy::parser::make_THEN({tok_line, tok_col});
-    } else if (result == "else") {
-      return yy::parser::make_ELSE({tok_line, tok_col});
-    } else if (result == "define") {
-      return yy::parser::make_DEFINE({tok_line, tok_col});
-    } else {
-      return yy::parser::make_IDENTIFIER(std::move(result),
-                                         {tok_line, tok_col});
     }
-  } else if (isdigit(c)) {
+    if (result == "lambda") {
+      return yy::parser::make_LAMBDA({tok_line, tok_col});
+    }
+    if (result == "if") {
+      return yy::parser::make_IF({tok_line, tok_col});
+    }
+    if (result == "define") {
+      return yy::parser::make_DEFINE({tok_line, tok_col});
+    }
+    return yy::parser::make_IDENTIFIER(std::move(result), {tok_line, tok_col});
+  }
+  if (isdigit(c)) {
     int result = c - '0';
     while (c = std::getc(file), isdigit(c)) {
       result = result * 10 + c - '0';
@@ -53,24 +51,28 @@ yy::parser::symbol_type lexer::lex() {
     }
     std::ungetc(c, file);
     return yy::parser::make_NUMBER(result, {tok_line, tok_col});
-  } else if (c == '(') {
-    return yy::parser::make_LPAR({tok_line, tok_col});
-  } else if (c == ')') {
-    return yy::parser::make_RPAR({tok_line, tok_col});
-  } else if (c == EOF) {
-    return yy::parser::make_EOF({tok_line, tok_col});
-  } else {
-    return yy::parser::make_YYerror({tok_line, tok_col});
   }
+  if (c == '(') {
+    return yy::parser::make_LPAR({tok_line, tok_col});
+  }
+  if (c == ')') {
+    return yy::parser::make_RPAR({tok_line, tok_col});
+  }
+  if (c == EOF) {
+    return yy::parser::make_EOF({tok_line, tok_col});
+  }
+  return yy::parser::make_YYerror({tok_line, tok_col});
 }
 
 void yy::parser::error(const location &loc, const std::string &what) {}
 
 std::vector<toplevel_expr> parse(FILE *f) {
   std::vector<toplevel_expr> defines;
-  lexer lex{f};
+  lexer lex{f, 1, 1};
   yy::parser parser{lex, defines};
-  if (parser.parse() != 0)
+  parser.set_debug_level(2);
+  if (parser.parse() != 0) {
     return {};
+  }
   return defines;
 };

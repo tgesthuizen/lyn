@@ -1,10 +1,16 @@
 #ifndef COMPILER_LOCATION_H
 #define COMPILER_LOCATION_H
 
+#include <ostream>
+
 struct location {
   int line;
   int col;
 };
+
+inline std::ostream &operator<<(std::ostream &stream, const location &loc) {
+  return stream << "<" << loc.line << " " << loc.col << ">";
+}
 
 #define YYLLOC_DEFAULT(Cur, Rhs, N)                                            \
   do                                                                           \

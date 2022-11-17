@@ -82,5 +82,5 @@ struct toplevel_expr {
 };
 
 std::vector<toplevel_expr> parse(FILE *input);
-
+void scopify(std::vector<toplevel_expr> &exprs);
 #endif

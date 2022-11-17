@@ -23,6 +23,8 @@ yy::parser::symbol_type yylex(lexer &lex, [[maybe_unused]] std::vector<toplevel_
 }
 %locations
 %define api.location.type {location}
+%define parse.trace
+
 %param { lexer &lex }
 %param { std::vector<toplevel_expr> &defines }
 
@@ -34,8 +36,6 @@ yy::parser::symbol_type yylex(lexer &lex, [[maybe_unused]] std::vector<toplevel_
   BEGIN
   LAMBDA
   IF
-  THEN
-  ELSE
   DEFINE
   EOF
 ;
@@ -52,7 +52,7 @@ yy::parser::symbol_type yylex(lexer &lex, [[maybe_unused]] std::vector<toplevel_
 %%
 %start document;
 
-document: defines
+document: defines EOF
 
 defines: %empty                                  {}
        | defines define                          { defines.push_back(std::move($2)); }
@@ -62,7 +62,7 @@ expr: IDENTIFIER                                 { $$ = std::make_unique<expr>(v
     | NUMBER                                     { $$ = std::make_unique<expr>(constant_expr{constant_type::Int, $1}, @$.line, @$.col); }
     | LPAR expr expr-list RPAR                   { $$ = std::make_unique<expr>(apply_expr{std::move($2), std::move($3)}, @$.line, @$.col); }
     | LPAR LET LPAR bindings RPAR expr RPAR      { $$ = std::make_unique<expr>(let_expr{std::move($4), std::move($6)}, @$.line, @$.col); }
-    | LPAR IF expr THEN expr ELSE expr RPAR      { $$ = std::make_unique<expr>(if_expr{std::move($3), std::move($5), std::move($7)}, @$.line, @$.col); }
+    | LPAR IF expr expr expr RPAR                { $$ = std::make_unique<expr>(if_expr{std::move($3), std::move($4), std::move($5)}, @$.line, @$.col); }
     | LPAR LAMBDA LPAR ident-list RPAR expr RPAR { $$ = std::make_unique<expr>(lambda_expr{std::move($4), std::move($6)}, @$.line, @$.col); }
     | LPAR BEGIN expr-list RPAR                  { $$ = std::make_unique<expr>(begin_expr{std::move($3)}, @$.line, @$.col); }
 

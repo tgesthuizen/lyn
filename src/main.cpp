@@ -13,4 +13,5 @@ int main(int argc, char **argv) {
     return 1;
   }
   auto decls = parse(input);
+  scopify(decls);
 }
