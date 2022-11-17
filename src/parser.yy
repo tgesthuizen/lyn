@@ -37,7 +37,6 @@ yy::parser::symbol_type yylex(lexer &lex, [[maybe_unused]] std::vector<toplevel_
   LAMBDA
   IF
   DEFINE
-  EOF
 ;
 %token <std::string> IDENTIFIER "identifier"
 %token <int> NUMBER "number"
@@ -52,10 +51,9 @@ yy::parser::symbol_type yylex(lexer &lex, [[maybe_unused]] std::vector<toplevel_
 %%
 %start document;
 
-document: defines EOF
+document: %empty                                 {}
+        | document define                        { defines.push_back(std::move($2)); }
 
-defines: %empty                                  {}
-       | defines define                          { defines.push_back(std::move($2)); }
 define: LPAR DEFINE IDENTIFIER expr RPAR         { $$ = {std::move($3), 0, std::move($4)}; }
 
 expr: IDENTIFIER                                 { $$ = std::make_unique<expr>(variable_expr{std::move($1)}, @$.line, @$.col); }

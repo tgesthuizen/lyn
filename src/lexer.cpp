@@ -1,6 +1,8 @@
 #include "parser.h"
 #include "token.h"
 
+#include <algorithm>
+
 yy::parser::symbol_type lexer::lex() {
   const auto update_pos = [this](int c) {
     ++col;
@@ -12,6 +14,11 @@ yy::parser::symbol_type lexer::lex() {
   const auto isalpha = [](int c) {
     return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
   };
+  const auto issym = [](int c) {
+    const char valid_chars[] = "!$%&*+-./:<=>?@^_~";
+    return std::any_of(std::begin(valid_chars), std::end(valid_chars),
+                       [c](char c2) { return c == c2; });
+  };
   const auto isdigit = [](int c) { return c >= '0' && c <= '9'; };
   const auto isspace = [](int c) { return c == ' ' || c == '\t' || c == '\n'; };
   int c;
@@ -21,10 +28,10 @@ yy::parser::symbol_type lexer::lex() {
     c = std::getc(file);
     update_pos(c);
   } while (isspace(c));
-  if (isalpha(c)) {
+  if (isalpha(c) || issym(c)) {
     std::string result;
     result.push_back(c);
-    while (c = std::getc(file), isalpha(c)) {
+    while (c = std::getc(file), isalpha(c) || issym(c) || isdigit(c)) {
       result.push_back(c);
       update_pos(c);
     }
@@ -59,7 +66,7 @@ yy::parser::symbol_type lexer::lex() {
     return yy::parser::make_RPAR({tok_line, tok_col});
   }
   if (c == EOF) {
-    return yy::parser::make_EOF({tok_line, tok_col});
+    return yy::parser::make_YYEOF({tok_line, tok_col});
   }
   return yy::parser::make_YYerror({tok_line, tok_col});
 }
