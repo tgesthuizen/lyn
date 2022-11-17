@@ -14,4 +14,5 @@ int main(int argc, char **argv) {
   }
   auto decls = parse(input);
   scopify(decls);
+  typecheck(decls);
 }

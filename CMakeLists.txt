@@ -16,5 +16,6 @@ add_executable(compiler
   src/lexer.cpp
   src/main.cpp
   src/scopify.cpp
+  src/typecheck.cpp
 )
 target_include_directories(compiler PUBLIC include ${CMAKE_CURRENT_BINARY_DIR}/parser)

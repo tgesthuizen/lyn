@@ -72,7 +72,7 @@ struct expr {
   struct type *type;
 
   expr(derive_pack_t<std::variant, all_exprs> content, int line, int col)
-    : content{std::move(content)}, line{line}, col{col}, type{nullptr} {}
+      : content{std::move(content)}, line{line}, col{col}, type{nullptr} {}
 };
 
 struct toplevel_expr {
@@ -83,4 +83,6 @@ struct toplevel_expr {
 
 std::vector<toplevel_expr> parse(FILE *input);
 void scopify(std::vector<toplevel_expr> &exprs);
+void typecheck(std::vector<toplevel_expr> &exprs);
+
 #endif
