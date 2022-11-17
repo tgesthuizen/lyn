@@ -7,27 +7,8 @@
 namespace {
 
 const char *const builtins[]{
-    "+",
-    "-",
-    "*",
-    "/",
-    "%",
-    "shl",
-    "shr",
-    "lor",
-    "land",
-    "lxor",
-    "neg"
-    "=",
-    "!=",
-    "<",
-    ">",
-    "<=",
-    ">=",
-    "not",
-    "or",
-    "and",
-    "xor",
+    "+", "-",  "*", "/", "%",  "shl", "shr", "lor", "land", "lxor", "neg",
+    "=", "!=", "<", ">", "<=", ">=",  "not", "or",  "and",  "xor",
 };
 
 class scopify_t {
