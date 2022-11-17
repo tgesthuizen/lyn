@@ -9,6 +9,8 @@
 
 #include "meta.h"
 
+namespace lyn {
+
 struct expr;
 struct type;
 
@@ -80,5 +82,7 @@ struct toplevel_expr {
   int id;
   std::unique_ptr<expr> value;
 };
+
+} // namespace lyn
 
 #endif

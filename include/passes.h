@@ -6,6 +6,8 @@
 #include <unordered_map>
 #include <vector>
 
+namespace lyn {
+
 struct toplevel_expr;
 struct type;
 
@@ -19,5 +21,7 @@ struct symbol_table {
 std::vector<toplevel_expr> parse(FILE *input);
 symbol_table scopify(std::vector<toplevel_expr> &exprs);
 void typecheck(std::vector<toplevel_expr> &exprs, const symbol_table &stable);
+
+} // namespace lyn
 
 #endif

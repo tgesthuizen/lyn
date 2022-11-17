@@ -3,12 +3,16 @@
 
 #include "parser.h"
 
+namespace lyn {
+
 struct lexer {
   FILE *file;
   int line = 1;
   int col = 1;
-  
-  yy::parser::symbol_type lex();
+
+  parser::symbol_type lex();
 };
+
+} // namespace lyn
 
 #endif

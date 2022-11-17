@@ -13,8 +13,7 @@ int main(int argc, char **argv) {
     fputs("Could not open input file\n", stderr);
     return 1;
   }
-  auto decls = parse(input);
-  std::unordered_map<std::string_view, int> pinfo;
-  auto table = scopify(decls);
-  typecheck(decls, table);
+  auto decls = lyn::parse(input);
+  auto table = lyn::scopify(decls);
+  lyn::typecheck(decls, table);
 }

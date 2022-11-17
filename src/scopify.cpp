@@ -4,6 +4,8 @@
 #include <string_view>
 #include <unordered_map>
 
+namespace lyn {
+
 namespace {
 
 const char *const builtins[]{
@@ -101,3 +103,5 @@ symbol_table scopify(std::vector<toplevel_expr> &exprs) {
   }
   return table;
 }
+
+} // namespace lyn

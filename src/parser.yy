@@ -4,6 +4,7 @@
 %define api.token.raw
 %define api.token.constructor
 %define api.value.type variant
+%define api.namespace {lyn}
 %define api.parser.class {parser}
 %define api.value.automove true
 %define parse.assert
@@ -11,14 +12,17 @@
 #include "expr.h"
 #include "location.h"
 
-#include <memory>
-
+namespace lyn {
 class lexer;
+}
+
 }
 %code {
 #include "token.h"
-yy::parser::symbol_type yylex(lexer &lex, [[maybe_unused]] std::vector<toplevel_expr> &defines) {
+namespace lyn {
+parser::symbol_type yylex(lexer &lex, [[maybe_unused]] std::vector<toplevel_expr> &defines) {
   return lex.lex();
+}
 }
 }
 %locations

@@ -3,7 +3,9 @@
 
 #include <algorithm>
 
-yy::parser::symbol_type lexer::lex() {
+namespace lyn {
+
+parser::symbol_type lexer::lex() {
   const auto update_pos = [this](int c) {
     ++col;
     if (c == '\n') {
@@ -37,18 +39,18 @@ yy::parser::symbol_type lexer::lex() {
     }
     std::ungetc(c, file);
     if (result == "let") {
-      return yy::parser::make_LET({tok_line, tok_col});
+      return parser::make_LET({tok_line, tok_col});
     }
     if (result == "lambda") {
-      return yy::parser::make_LAMBDA({tok_line, tok_col});
+      return parser::make_LAMBDA({tok_line, tok_col});
     }
     if (result == "if") {
-      return yy::parser::make_IF({tok_line, tok_col});
+      return parser::make_IF({tok_line, tok_col});
     }
     if (result == "define") {
-      return yy::parser::make_DEFINE({tok_line, tok_col});
+      return parser::make_DEFINE({tok_line, tok_col});
     }
-    return yy::parser::make_IDENTIFIER(std::move(result), {tok_line, tok_col});
+    return parser::make_IDENTIFIER(std::move(result), {tok_line, tok_col});
   }
   if (isdigit(c)) {
     int result = c - '0';
@@ -57,29 +59,31 @@ yy::parser::symbol_type lexer::lex() {
       update_pos(c);
     }
     std::ungetc(c, file);
-    return yy::parser::make_NUMBER(result, {tok_line, tok_col});
+    return parser::make_NUMBER(result, {tok_line, tok_col});
   }
   if (c == '(') {
-    return yy::parser::make_LPAR({tok_line, tok_col});
+    return parser::make_LPAR({tok_line, tok_col});
   }
   if (c == ')') {
-    return yy::parser::make_RPAR({tok_line, tok_col});
+    return parser::make_RPAR({tok_line, tok_col});
   }
   if (c == EOF) {
-    return yy::parser::make_YYEOF({tok_line, tok_col});
+    return parser::make_YYEOF({tok_line, tok_col});
   }
-  return yy::parser::make_YYerror({tok_line, tok_col});
+  return parser::make_YYerror({tok_line, tok_col});
 }
 
-void yy::parser::error(const location &loc, const std::string &what) {}
+void parser::error(const location &loc, const std::string &what) {}
 
 std::vector<toplevel_expr> parse(FILE *f) {
   std::vector<toplevel_expr> defines;
   lexer lex{f, 1, 1};
-  yy::parser parser{lex, defines};
+  parser parser{lex, defines};
   // parser.set_debug_level(2);
   if (parser.parse() != 0) {
     return {};
   }
   return defines;
 };
+
+} // namespace lyn

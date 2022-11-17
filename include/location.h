@@ -3,6 +3,8 @@
 
 #include <ostream>
 
+namespace lyn {
+
 struct location {
   int line;
   int col;
@@ -22,5 +24,7 @@ inline std::ostream &operator<<(std::ostream &stream, const location &loc) {
       (Cur).col = YYRHSLOC(Rhs, 0).col;                                        \
     }                                                                          \
   while (0)
+
+} // namespace lyn
 
 #endif

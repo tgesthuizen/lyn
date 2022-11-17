@@ -7,6 +7,8 @@
 #include <type_traits>
 #include <unordered_map>
 
+namespace lyn {
+
 namespace {
 
 struct unify_t {
@@ -117,8 +119,9 @@ public:
     if (std::empty(expr.exprs)) {
       return unit_t;
     }
-    std::for_each(std::begin(expr.exprs), std::end(expr.exprs) - 1,
-                  [this](const std::unique_ptr<::expr> &ptr) { visit(*ptr); });
+    std::for_each(
+        std::begin(expr.exprs), std::end(expr.exprs) - 1,
+        [this](const std::unique_ptr<lyn::expr> &ptr) { visit(*ptr); });
     return visit(*expr.exprs.back());
   }
 
@@ -193,3 +196,5 @@ void typecheck(std::vector<toplevel_expr> &exprs, const symbol_table &stable) {
     functor.visit(*expr.value);
   }
 }
+
+} // namespace lyn

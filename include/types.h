@@ -6,6 +6,8 @@
 
 #include "meta.h"
 
+namespace lyn {
+
 struct type;
 
 struct int_type {};
@@ -27,4 +29,7 @@ using all_types =
 struct type {
   derive_pack_t<std::variant, all_types> content;
 };
+
+} // namespace lyn
+
 #endif

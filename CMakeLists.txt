@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.0.2)
 
-project(spp CXX)
+project(lyn CXX)
 
 find_package(BISON REQUIRED)
 
@@ -11,11 +11,16 @@ BISON_TARGET(
   DEFINES_FILE ${CMAKE_CURRENT_BINARY_DIR}/parser/parser.h
 )
 
-add_executable(compiler
+add_executable(lyn
   ${BISON_parser_OUTPUTS}
   src/lexer.cpp
   src/main.cpp
   src/scopify.cpp
   src/typecheck.cpp
 )
-target_include_directories(compiler PUBLIC include ${CMAKE_CURRENT_BINARY_DIR}/parser)
+target_include_directories(
+  lyn
+  PUBLIC
+  include
+  ${CMAKE_CURRENT_BINARY_DIR}/parser
+)
