@@ -88,22 +88,15 @@ public:
   type *operator()(variable_expr &expr) { return id_to_type.at(expr.id); }
 
   type *operator()(apply_expr &expr) {
-    auto *const ftype_boxed = visit(*expr.func);
-    auto *ftype = std::get_if<function_type>(&ftype_boxed->content);
-    if (!ftype) {
-      throw std::runtime_error{"Thing in apply is not a function"};
+    auto *const ftype = visit(*expr.func);
+    function_type ft;
+    for (auto &&arg : expr.args) {
+      ft.params.push_back(visit(*arg));
     }
-    if (std::size(ftype->params) != std::size(expr.args)) {
-      throw std::runtime_error{"Arity mismatch"};
-    }
-    if (!std::equal(std::begin(expr.args), std::end(expr.args),
-                    std::begin(ftype->params),
-                    [this](const std::unique_ptr<::expr> &arg, type *param) {
-                      return unify_t{}.visit(*visit(*arg), *param);
-                    })) {
-      throw std::runtime_error{"Wrong parameter"};
-    }
-    return ftype->result;
+    type *const result = new type{type_variable{}};
+    ft.result = result;
+    unify_t{}.visit(*new type{std::move(ft)}, *ftype);
+    return result;
   }
 
   type *operator()(lambda_expr &expr) {
