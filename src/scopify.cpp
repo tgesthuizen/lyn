@@ -32,6 +32,8 @@ public:
       name_to_id[param.name] = param.id;
     }
     std::visit(*this, expr.body->content);
+    for (auto &&param : expr.params)
+      name_to_id.erase(param.name);
     for (auto &&handle : old_values)
       name_to_id.insert(std::move(handle));
   }
@@ -49,6 +51,8 @@ public:
       name_to_id[binding.name] = binding.id;
     }
     std::visit(*this, expr.body->content);
+    for (auto &&binding : expr.bindings)
+      name_to_id.erase(binding.name);
     for (auto &&handle : old_values)
       name_to_id.insert(std::move(handle));
   }
