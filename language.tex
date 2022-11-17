@@ -121,26 +121,11 @@ The following functions are built-in:\\[1.5ex]
 The Fibonacci function, returning a number of the Fibonacci series by
 index.
 
-\begin{lstlisting}
-  (define (fib n)
-    (let lp ((a 1)
-             (b 1)
-             (n n))
-      (if (= n 0)
-          a
-          (lp b (+ a b) (- n 1)))))
-\end{lstlisting}
+\lstinputlisting{examples/fib.scm}
 
 The gcd function, returning the greatest common denominator of two
 numbers.
 
-\begin{lstlisting}
-  (define (gcd a b)
-    (let lp ((a a)
-             (b b))
-      (if (= b 0)
-          a
-          (lp b (/ a b)))))
-\end{lstlisting}
+\lstinputlisting{examples/gcd.scm}
 
 \end{document}
