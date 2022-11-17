@@ -15,5 +15,6 @@ add_executable(compiler
   ${BISON_parser_OUTPUTS}
   src/lexer.cpp
   src/main.cpp
+  src/scopify.cpp
 )
 target_include_directories(compiler PUBLIC include ${CMAKE_CURRENT_BINARY_DIR}/parser)
