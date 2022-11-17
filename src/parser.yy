@@ -17,13 +17,14 @@ class lexer;
 }
 %code {
 #include "token.h"
-yy::parser::symbol_type yylex(lexer &lex) {
+yy::parser::symbol_type yylex(lexer &lex, [[maybe_unused]] std::vector<toplevel_expr> &defines) {
   return lex.lex();
 }
 }
 %locations
 %define api.location.type {location}
 %param { lexer &lex }
+%param { std::vector<toplevel_expr> &defines }
 
 %define api.token.prefix {TOK_}
 %token
@@ -41,7 +42,6 @@ yy::parser::symbol_type yylex(lexer &lex) {
 %token <std::string> IDENTIFIER "identifier"
 %token <int> NUMBER "number"
 
-%nterm <std::vector<toplevel_expr>> defines
 %nterm <toplevel_expr> define
 %nterm <std::unique_ptr<expr>> expr
 %nterm <std::vector<let_binding>> bindings
@@ -55,8 +55,8 @@ yy::parser::symbol_type yylex(lexer &lex) {
 document: defines
 
 defines: %empty                                  {}
-       | defines define                          { $$ = std::move($1); $$.push_back(std::move($2)); }
-define: LPAR DEFINE IDENTIFIER expr RPAR         { $$ = {std::move($3), std::move($4)}; }
+       | defines define                          { defines.push_back(std::move($2)); }
+define: LPAR DEFINE IDENTIFIER expr RPAR         { $$ = {std::move($3), 0, std::move($4)}; }
 
 expr: IDENTIFIER                                 { $$ = std::make_unique<expr>(variable_expr{std::move($1)}, @$.line, @$.col); }
     | NUMBER                                     { $$ = std::make_unique<expr>(constant_expr{constant_type::Int, $1}, @$.line, @$.col); }

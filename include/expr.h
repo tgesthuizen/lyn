@@ -34,7 +34,6 @@ struct variable_expr {
 struct apply_expr {
   std::unique_ptr<expr> func;
   std::vector<std::unique_ptr<expr>> args;
-  int num_args;
 };
 
 struct lambda_expr {
@@ -78,6 +77,7 @@ struct expr {
 
 struct toplevel_expr {
   std::string name;
+  int id;
   std::unique_ptr<expr> value;
 };
 

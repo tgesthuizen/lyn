@@ -64,6 +64,13 @@ yy::parser::symbol_type lexer::lex() {
   }
 }
 
-void yy::parser::error(const location &loc, const std::string &what) {
+void yy::parser::error(const location &loc, const std::string &what) {}
 
-}
+std::vector<toplevel_expr> parse(FILE *f) {
+  std::vector<toplevel_expr> defines;
+  lexer lex{f};
+  yy::parser parser{lex, defines};
+  if (parser.parse() != 0)
+    return {};
+  return defines;
+};
