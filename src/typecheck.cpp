@@ -139,8 +139,7 @@ public:
     return target.type = std::visit(*this, target.content);
   }
 
-  void
-  setup_primitive_types(const std::unordered_map<std::string_view, int> &pinfo);
+  void setup_primitive_types(const symbol_table &stable);
   void register_typevar(int id) { id_to_type[id] = new type{type_variable{}}; }
 
 private:
@@ -150,10 +149,9 @@ private:
   type *unit_t = new type{unit_type{}};
 };
 
-void typecheck_t::setup_primitive_types(
-    const std::unordered_map<std::string_view, int> &pinfo) {
+void typecheck_t::setup_primitive_types(const symbol_table &stable) {
   const auto register_type = [&](std::string_view name, type *t) {
-    id_to_type[pinfo.at(name)] = t;
+    id_to_type[stable.name_to_id.at(name)] = t;
   };
   type *bi_int = new type{function_type{{int_t, int_t}, int_t}};
   register_type("+", bi_int);
@@ -185,10 +183,9 @@ void typecheck_t::setup_primitive_types(
 
 } // namespace
 
-void typecheck(std::vector<toplevel_expr> &exprs,
-               std::unordered_map<std::string_view, int> &pinfo) {
+void typecheck(std::vector<toplevel_expr> &exprs, const symbol_table &stable) {
   typecheck_t functor;
-  functor.setup_primitive_types(pinfo);
+  functor.setup_primitive_types(stable);
   for (auto &expr : exprs) {
     functor.register_typevar(expr.id);
   }

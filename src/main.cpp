@@ -15,6 +15,6 @@ int main(int argc, char **argv) {
   }
   auto decls = parse(input);
   std::unordered_map<std::string_view, int> pinfo;
-  scopify(decls, pinfo);
-  typecheck(decls, pinfo);
+  auto table = scopify(decls);
+  typecheck(decls, table);
 }
