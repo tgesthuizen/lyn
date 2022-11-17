@@ -1,4 +1,5 @@
 #include "expr.h"
+#include "passes.h"
 #include "types.h"
 
 #include <algorithm>
@@ -7,6 +8,10 @@
 #include <unordered_map>
 
 namespace {
+
+struct builtin_type {
+  std::string_view name;
+};
 
 struct unify_t {
   bool operator()(int_type lhs, int_type rhs) { return true; }
@@ -145,6 +150,9 @@ public:
     return target.type = std::visit(*this, target.content);
   }
 
+  void
+  setup_primitive_types(const std::unordered_map<std::string_view, int> &pinfo);
+
 private:
   std::unordered_map<int, type *> id_to_type;
   type *int_t = new type{int_type{}};
@@ -152,10 +160,45 @@ private:
   type *unit_t = new type{unit_type{}};
 };
 
+void typecheck_t::setup_primitive_types(
+    const std::unordered_map<std::string_view, int> &pinfo) {
+  const auto register_type = [&](std::string_view name, type *t) {
+    id_to_type[pinfo.at(name)] = t;
+  };
+  type *bi_int = new type{function_type{{int_t, int_t}, int_t}};
+  register_type("+", bi_int);
+  register_type("-", bi_int);
+  register_type("*", bi_int);
+  register_type("/", bi_int);
+  register_type("%", bi_int);
+  register_type("shl", bi_int);
+  register_type("shr", bi_int);
+  register_type("lor", bi_int);
+  register_type("land", bi_int);
+  register_type("lxor", bi_int);
+  type *uni_int = new type{function_type{{int_t}, int_t}};
+  register_type("neg", uni_int);
+  type *comp_int = new type{function_type{{int_t, int_t}, bool_t}};
+  register_type("=", comp_int);
+  register_type("!=", comp_int);
+  register_type("<", comp_int);
+  register_type(">", comp_int);
+  register_type("<=", comp_int);
+  register_type(">=", comp_int);
+  type *uni_bool = new type{function_type{{bool_t}, bool_t}};
+  register_type("not", uni_bool);
+  type *bi_bool = new type{function_type{{bool_t, bool_t}, bool_t}};
+  register_type("or", bi_bool);
+  register_type("and", bi_bool);
+  register_type("xor", bi_bool);
+}
+
 } // namespace
 
-void typecheck(std::vector<toplevel_expr> &exprs) {
+void typecheck(std::vector<toplevel_expr> &exprs,
+               std::unordered_map<std::string_view, int> &pinfo) {
   typecheck_t functor;
+  functor.setup_primitive_types(pinfo);
   for (auto &&expr : exprs) {
     functor.visit(*expr.value);
   }

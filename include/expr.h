@@ -81,8 +81,4 @@ struct toplevel_expr {
   std::unique_ptr<expr> value;
 };
 
-std::vector<toplevel_expr> parse(FILE *input);
-void scopify(std::vector<toplevel_expr> &exprs);
-void typecheck(std::vector<toplevel_expr> &exprs);
-
 #endif

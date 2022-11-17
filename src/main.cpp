@@ -1,6 +1,7 @@
 #include <cstdio>
 
 #include "expr.h"
+#include "passes.h"
 
 int main(int argc, char **argv) {
   if (argc != 2) {
@@ -13,6 +14,7 @@ int main(int argc, char **argv) {
     return 1;
   }
   auto decls = parse(input);
-  scopify(decls);
-  typecheck(decls);
+  std::unordered_map<std::string_view, int> pinfo;
+  scopify(decls, pinfo);
+  typecheck(decls, pinfo);
 }

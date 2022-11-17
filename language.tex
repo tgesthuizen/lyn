@@ -86,6 +86,10 @@ The following functions are built-in:\\[1.5ex]
   \texttt{Int} & Calculates the logical or of two integers\\
   \texttt{land} & \texttt{Int} \rightarrow \texttt{Int} \rightarrow
   \texttt{Int} & Calculates the logical and of two integers\\
+  \texttt{lxor} & \texttt{Int} \rightarrow \texttt{Int} \rightarrow
+  \texttt{Int} & Calculates the logical xor of two integers\\
+  \texttt{neg} & \texttt{Int} \rightarrow \texttt{Int} & Negates
+  and integer\\
   \texttt{=} & \texttt{Int} \rightarrow \texttt{Int} \rightarrow
   \texttt{Bool} & Checks if two integers are equal\\
   \texttt{!=} & \texttt{Int} \rightarrow \texttt{Int} \rightarrow
@@ -101,10 +105,15 @@ The following functions are built-in:\\[1.5ex]
   another\\
   \texttt{not} & \texttt{Bool} \rightarrow \texttt{Bool} & Negates a
   boolean\\
-  \texttt{or} & \texttt{Bool} \rightarrow \texttt{Bool} &
-  \texttt{True} if any of the operands is \texttt{True}\\
-  \texttt{and} & \texttt{Bool} \rightarrow \texttt{Bool} &
-  \texttt{True} if all of the operands are \texttt{True}\\
+  \texttt{or} & \texttt{Bool} \rightarrow \texttt{Bool} \rightarrow
+  \texttt{Bool} & \texttt{True} if any of the operands is
+  \texttt{True}\\
+  \texttt{and} & \texttt{Bool} \rightarrow \texttt{Bool} \rightarrow
+  \texttt{Bool} & \texttt{True} if all of the operands are
+  \texttt{True}\\
+  \texttt{xor} & \texttt{Bool} \rightarrow \texttt{Bool} \rightarrow
+  \texttt{Bool} & \texttt{True} if exactly one of the operands is
+  \texttt{True}\\
 \end{tabularx}
 
 \section{Examples}

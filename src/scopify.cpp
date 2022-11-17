@@ -1,17 +1,39 @@
 #include "expr.h"
+#include "passes.h"
 
 #include <string_view>
 #include <unordered_map>
 
 namespace {
 
+const char *const builtins[]{
+    "+",
+    "-",
+    "*",
+    "/",
+    "%",
+    "shl",
+    "shr",
+    "lor",
+    "land",
+    "lxor",
+    "neg"
+    "=",
+    "!=",
+    "<",
+    ">",
+    "<=",
+    ">=",
+    "not",
+    "or",
+    "and",
+    "xor",
+};
+
 class scopify_t {
 public:
-  explicit scopify_t(std::unordered_map<std::string_view, int> name_to_id)
-      : name_to_id{std::move(name_to_id)} {}
-
   void operator()([[maybe_unused]] constant_expr &expr) {}
-  void operator()(variable_expr &expr) { expr.id = name_to_id[expr.name]; }
+  void operator()(variable_expr &expr) { expr.id = name_to_id.at(expr.name); }
   void operator()(apply_expr &expr) {
     std::visit(*this, expr.func->content);
     for (auto &&arg : expr.args) {
@@ -62,21 +84,30 @@ public:
     std::visit(*this, expr.els->content);
   }
 
+  int register_name(std::string_view name) {
+    const int id = next_id++;
+    name_to_id[name] = id;
+    return id;
+  }
+
 private:
   std::unordered_map<std::string_view, int> name_to_id;
-  int next_id = 1000;
+  int next_id = 1;
 };
 
 } // namespace
 
-void scopify(std::vector<toplevel_expr> &exprs) {
-  std::unordered_map<std::string_view, int> name_to_id;
-  int next_id = 100;
-  for (auto &&decl : exprs) {
-    decl.id = next_id++;
-    name_to_id[decl.name] = decl.id;
+void scopify(std::vector<toplevel_expr> &exprs,
+             std::unordered_map<std::string_view, int> &pinfo) {
+  scopify_t functor;
+  for (auto &&pname : builtins) {
+    pinfo[pname] = functor.register_name(pname);
   }
-  scopify_t functor{std::move(name_to_id)};
+
+  for (auto &&decl : exprs) {
+    decl.id = functor.register_name(decl.name);
+  }
+
   for (auto &&decl : exprs) {
     std::visit(functor, decl.value->content);
   }
