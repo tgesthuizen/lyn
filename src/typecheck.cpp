@@ -85,7 +85,7 @@ public:
     throw std::invalid_argument{"Reached beyond end of switch"};
   }
 
-  type *operator()(variable_expr &expr) { return id_to_type[expr.id]; }
+  type *operator()(variable_expr &expr) { return id_to_type.at(expr.id); }
 
   type *operator()(apply_expr &expr) {
     auto *const ftype_boxed = visit(*expr.func);
@@ -152,6 +152,7 @@ public:
 
   void
   setup_primitive_types(const std::unordered_map<std::string_view, int> &pinfo);
+  void register_typevar(int id) { id_to_type[id] = new type{type_variable{}}; }
 
 private:
   std::unordered_map<int, type *> id_to_type;
@@ -199,6 +200,9 @@ void typecheck(std::vector<toplevel_expr> &exprs,
                std::unordered_map<std::string_view, int> &pinfo) {
   typecheck_t functor;
   functor.setup_primitive_types(pinfo);
+  for (auto &expr : exprs) {
+    functor.register_typevar(expr.id);
+  }
   for (auto &&expr : exprs) {
     functor.visit(*expr.value);
   }
