@@ -77,7 +77,7 @@ std::vector<toplevel_expr> parse(FILE *f) {
   std::vector<toplevel_expr> defines;
   lexer lex{f, 1, 1};
   yy::parser parser{lex, defines};
-  parser.set_debug_level(2);
+  // parser.set_debug_level(2);
   if (parser.parse() != 0) {
     return {};
   }
