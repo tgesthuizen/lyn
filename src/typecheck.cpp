@@ -9,10 +9,6 @@
 
 namespace {
 
-struct builtin_type {
-  std::string_view name;
-};
-
 struct unify_t {
   bool operator()(int_type lhs, int_type rhs) { return true; }
   bool operator()(bool_type lhs, bool_type rhs) { return true; }
