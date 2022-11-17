@@ -28,7 +28,7 @@ struct constant_expr {
 
 struct variable_expr {
   std::string name;
-  int id;
+  int id = 0;
 };
 
 struct apply_expr {
@@ -68,9 +68,12 @@ using all_exprs = type_list<constant_expr, variable_expr, apply_expr,
 
 struct expr {
   derive_pack_t<std::variant, all_exprs> content;
-  struct type *type;
   int line;
   int col;
+  struct type *type;
+
+  expr(derive_pack_t<std::variant, all_exprs> content, int line, int col)
+    : content{std::move(content)}, line{line}, col{col}, type{nullptr} {}
 };
 
 struct toplevel_expr {

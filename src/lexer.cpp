@@ -1,8 +1,7 @@
+#include "parser.h"
 #include "token.h"
 
-#include <stdexcept>
-
-void lexer::lex() {
+yy::parser::symbol_type lexer::lex() {
   const auto update_pos = [this](int c) {
     ++col;
     if (c == '\n') {
@@ -18,7 +17,6 @@ void lexer::lex() {
   int c;
   const int tok_line = line;
   const int tok_col = col;
-  using token_value = decltype(std::declval<token>().value);
   do {
     c = std::getc(file);
     update_pos(c);
@@ -32,26 +30,20 @@ void lexer::lex() {
     }
     std::ungetc(c, file);
     if (result == "let") {
-      curtok = {tok_line, tok_col, token_kind::tok_let, token_value{}};
-      return;
+      return yy::parser::make_LET({tok_line, tok_col});
     } else if (result == "lambda") {
-      curtok = {tok_line, tok_col, token_kind::tok_lambda, token_value{}};
-      return;
+      return yy::parser::make_LAMBDA({tok_line, tok_col});
     } else if (result == "if") {
-      curtok = {tok_line, tok_col, token_kind::tok_if, token_value{}};
-      return;
+      return yy::parser::make_IF({tok_line, tok_col});
     } else if (result == "then") {
-      curtok = {tok_line, tok_col, token_kind::tok_then, token_value{}};
-      return;
+      return yy::parser::make_THEN({tok_line, tok_col});
     } else if (result == "else") {
-      curtok = {tok_line, tok_col, token_kind::tok_else, token_value{}};
-      return;
+      return yy::parser::make_ELSE({tok_line, tok_col});
     } else if (result == "define") {
-      curtok = {tok_line, tok_col, token_kind::tok_define, token_value{}};
-      return;
+      return yy::parser::make_DEFINE({tok_line, tok_col});
     } else {
-      curtok = {tok_line, tok_col, token_kind::tok_identifier, result};
-      return;
+      return yy::parser::make_IDENTIFIER(std::move(result),
+                                         {tok_line, tok_col});
     }
   } else if (isdigit(c)) {
     int result = c - '0';
@@ -60,18 +52,18 @@ void lexer::lex() {
       update_pos(c);
     }
     std::ungetc(c, file);
-    curtok = {tok_line, tok_col, token_kind::tok_constant, result};
-    return;
+    return yy::parser::make_NUMBER(result, {tok_line, tok_col});
   } else if (c == '(') {
-    curtok = {tok_line, tok_col, token_kind::tok_left_paren, token_value{}};
-    return;
+    return yy::parser::make_LPAR({tok_line, tok_col});
   } else if (c == ')') {
-    curtok = {tok_line, tok_col, token_kind::tok_right_paren, token_value{}};
-    return;
+    return yy::parser::make_RPAR({tok_line, tok_col});
   } else if (c == EOF) {
-    curtok = {tok_line, tok_col, token_kind::tok_eof, token_value{}};
-    return;
+    return yy::parser::make_EOF({tok_line, tok_col});
   } else {
-    throw std::runtime_error{"Invalid lexer token"};
+    return yy::parser::make_YYerror({tok_line, tok_col});
   }
+}
+
+void yy::parser::error(const location &loc, const std::string &what) {
+
 }
