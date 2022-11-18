@@ -126,7 +126,8 @@ public:
     const auto tail_pos_saved = std::exchange(tail_pos, false);
     const int cond_id = std::visit(*this, expr.cond->content);
     tail_pos = tail_pos_saved;
-    // Do the "update all references to respect reallocations" dance
+    // Please be very aware in the below section that inserting into
+    // current_def->blocks might get you a dangling current_block
     const std::size_t this_block_idx =
         current_block - current_def->blocks.data();
     current_def->blocks.emplace_back();
