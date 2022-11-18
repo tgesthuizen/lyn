@@ -1,5 +1,5 @@
-#ifndef COMPILER_META_H
-#define COMPILER_META_H
+#ifndef LYN_META_H
+#define LYN_META_H
 
 namespace lyn {
 

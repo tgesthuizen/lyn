@@ -1,5 +1,5 @@
-#ifndef COMPILER_PASSES_H
-#define COMPILER_PASSES_H
+#ifndef LYN_PASSES_H
+#define LYN_PASSES_H
 
 #include <cstdio>
 #include <string_view>

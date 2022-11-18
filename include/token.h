@@ -1,5 +1,5 @@
-#ifndef COMPILER_TOKEN_H
-#define COMPILER_TOKEN_H
+#ifndef LYN_TOKEN_H
+#define LYN_TOKEN_H
 
 #include "parser.h"
 

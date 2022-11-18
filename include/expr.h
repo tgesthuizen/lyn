@@ -1,5 +1,5 @@
-#ifndef COMPILER_EXPR_H
-#define COMPILER_EXPR_H
+#ifndef LYN_EXPR_H
+#define LYN_EXPR_H
 
 #include <cstddef>
 #include <memory>

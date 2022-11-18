@@ -1,5 +1,5 @@
-#ifndef COMPILER_LOCATION_H
-#define COMPILER_LOCATION_H
+#ifndef LYN_LOCATION_H
+#define LYN_LOCATION_H
 
 #include <ostream>
 

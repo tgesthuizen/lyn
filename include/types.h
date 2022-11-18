@@ -1,5 +1,5 @@
-#ifndef COMPILER_TYPES_H
-#define COMPILER_TYPES_H
+#ifndef LYN_TYPES_H
+#define LYN_TYPES_H
 
 #include <variant>
 #include <vector>
