@@ -64,4 +64,51 @@ Right now it seems that types can be dropped after they are checked so
 I might just allocate them in a separate heap and drop it altogether
 once IR translation has been done.
 
+\section{2022-11-18}
+
+\subsection{What happened today?}
+
+It was decided that ANF (A-normal forms) is the intermediate
+representation of choice for now.
+A pass that implements the parsed AST into this format has started
+being developed.
+
+\subsection{Questions that came up}
+
+Is the way non-tail if expressions are handeled sufficient?
+It seems I might need to add phi nodes as SSA compilers like LLVM use
+in order to nail the exact details.
+I also expect this to lead to some brain melt when developing a proper
+register allocator.
+
+\subsection{New ideas}
+
+My view of what the first backend should be is still somewhat vague,
+but a textual assembly output seems to be the lowest hanging fruit.
+Especially as this can be gracefully expanded to full ELF relocatable
+output.
+There is also the idea of a makeshift LLVM backend, but this makes
+writing an own backend basically obsolete, as there is no need for
+it.
+Also this approach immediatly destroys any hope of porting the
+compiler in the current form onto an embedded platform.
+
+\subsection{Notes of today}
+
+While the ANF pass itself was challenging to implement\footnote{Still
+  I got away with implementing it without a design session
+  upfront. Wohoo!?}, but of comprehensible complexity, the amount of
+details that need adjustment for optimal code generation seems
+overwhelming.
+I'm not yet bothered as the current goal is getting correct code
+generation, not fast code generation, but this is something to keep in
+mind.
+
+
+Sometime soon it might be of value to have some documentation of the
+internal structure of the compiler (eww, yet another document to
+maintain).
+For now I procrastinate on this as I am not yet 100\% convinced that
+the current design will work out.
+
 \end{document}
