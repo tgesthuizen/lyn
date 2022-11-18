@@ -13,6 +13,7 @@ BISON_TARGET(
 
 add_executable(lyn
   ${BISON_parser_OUTPUTS}
+  src/anf.cpp
   src/lexer.cpp
   src/main.cpp
   src/scopify.cpp

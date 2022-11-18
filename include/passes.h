@@ -10,6 +10,7 @@ namespace lyn {
 
 struct toplevel_expr;
 struct type;
+struct anf_context;
 
 struct symbol_table {
   std::unordered_map<std::string_view, int> name_to_id = {};
@@ -21,6 +22,8 @@ struct symbol_table {
 std::vector<toplevel_expr> parse(FILE *input);
 symbol_table scopify(std::vector<toplevel_expr> &exprs);
 void typecheck(std::vector<toplevel_expr> &exprs, const symbol_table &stable);
+anf_context genanf(std::vector<toplevel_expr> &exprs,
+                   const symbol_table &stable);
 
 } // namespace lyn
 
