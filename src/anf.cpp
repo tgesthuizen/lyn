@@ -90,7 +90,7 @@ public:
                    });
     tail_pos = tail_pos_saved;
     int call_id = 0;
-    if (tail_pos)
+    if (!tail_pos)
       call_id = next_id++;
     current_block->content.emplace_back(
         anf_call{fid, std::move(args), call_id, tail_pos});
@@ -145,7 +145,7 @@ public:
     const auto then_id = std::visit(*this, expr.then->content);
     current_block = &current_def->blocks[else_block];
     const auto else_id = std::visit(*this, expr.els->content);
-    if (!tail_pos)
+    if (tail_pos)
       return 0;
     const int ret_id = next_id++;
     current_def->blocks[then_block].content.emplace_back(
