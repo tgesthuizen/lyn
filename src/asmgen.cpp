@@ -135,6 +135,10 @@ void genasm(anf_context &ctx, FILE *out) {
             expr);
       }
     }
+    fprintf(out,
+            "\t.pool\n"
+            "\t.size \"%s\", .-\"%s\"\n",
+            def.name.c_str(), def.name.c_str());
   }
 }
 
