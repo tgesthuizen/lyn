@@ -43,11 +43,6 @@ struct anf_cond {
   int else_block;
 };
 
-struct anf_global_assign {
-  std::string name;
-  int id;
-};
-
 struct anf_return {
   int value;
 };
@@ -56,9 +51,14 @@ struct anf_jump {
   int target;
 };
 
+struct anf_global_assign {
+  std::string name;
+  int id;
+};
+
 using all_anf_types =
     type_list<anf_receive, anf_global, anf_constant, anf_call, anf_cond,
-              anf_global_assign, anf_return, anf_assoc, anf_jump>;
+              anf_return, anf_assoc, anf_jump, anf_global_assign>;
 using anf_expr = derive_pack_t<std::variant, all_anf_types>;
 
 struct basic_block {
