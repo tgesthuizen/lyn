@@ -22,7 +22,7 @@ void genasm(anf_context &ctx, FILE *out) {
     for (std::size_t block_idx = 0; block_idx != std::size(def.blocks);
          ++block_idx) {
       auto &&block = def.blocks[block_idx];
-      int local_count = used_stack_slots[block_idx];
+      int local_count = used_stack_slots.at(block_idx);
       int stack_offset = local_count;
       fprintf(out, ".L%d:\n", static_cast<int>(label_offset + block_idx));
       for (auto &&expr : block.content)
@@ -112,6 +112,17 @@ void genasm(anf_context &ctx, FILE *out) {
               }
               if constexpr (std::is_same_v<val_t, anf_assoc>) {
                 local_to_stack_slot[val.id] = local_to_stack_slot[val.alias];
+              }
+              if constexpr (std::is_same_v<val_t, anf_cond>) {
+                used_stack_slots[val.then_block] = local_count;
+                used_stack_slots[val.else_block] = local_count;
+                fprintf(out,
+                        "\tldr r0, [sp, #%d]\n"
+                        "\tbe .L%d\n"
+                        "\tb .L%d\n",
+                        local_to_stack_slot[val.cond_id],
+                        val.then_block + label_offset,
+                        val.else_block + label_offset);
               }
               if constexpr (std::is_same_v<val_t, anf_return>) {
                 fprintf(out,
