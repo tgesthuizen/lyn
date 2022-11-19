@@ -6,6 +6,8 @@
 \setlength{\parindent}{0ex}
 \setlength{\parskip}{1.5ex}
 
+\usepackage{listings}
+
 \begin{document}
 
 \maketitle
@@ -110,5 +112,31 @@ internal structure of the compiler (eww, yet another document to
 maintain).
 For now I procrastinate on this as I am not yet 100\% convinced that
 the current design will work out.
+
+\section{2022-11-19}
+
+\subsection{What happened today?}
+
+Hooked up the ANF pass and found it to be pretty functional.
+Fixed a bug here and there and apparently I am able to generate pretty
+okay IR code:
+
+\begin{lstlisting}
+tibbe@finkpad:~/src/spp$ build/lyn examples/gcd.scm
+<global> gcd:
+.L0:
+        23, 24 <- receive
+        25 <- global "="
+        26 <- const 0
+        27 <- call 25(24, 26)
+        if 27: 1 2
+.L1:
+        ret 23
+.L2:
+        28 <- global "gcd"
+        29 <- global "/"
+        30 <- call 29(23, 24)
+        tailcall 28(24, 30)
+\end{lstlisting}
 
 \end{document}
