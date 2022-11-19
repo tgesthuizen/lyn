@@ -5,6 +5,18 @@
 
 namespace lyn {
 
+namespace {
+
+void print_int_list(const std::vector<int> &lst, FILE *out) {
+  if (std::empty(lst))
+    return;
+  fprintf(out, "%d", lst.front());
+  std::for_each(std::begin(lst) + 1, std::end(lst),
+                [out](int i) { fprintf(out, ", %d", i); });
+}
+
+} // namespace
+
 void print_anf(anf_context &ctx, FILE *out) {
   for (auto &&def : ctx.defs) {
     if (def.global)
@@ -19,10 +31,8 @@ void print_anf(anf_context &ctx, FILE *out) {
               using val_t = std::decay_t<decltype(val)>;
               if constexpr (std::is_same_v<val_t, anf_receive>) {
                 fputs("\t", out);
+                print_int_list(val.args, out);
                 if (!std::empty(val.args)) {
-                  fprintf(out, "%d", val.args.front());
-                  std::for_each(std::begin(val.args) + 1, std::end(val.args),
-                                [out](int i) { fprintf(out, ", %d", i); });
                   fputs(" <- ", out);
                 }
                 fputs("receive\n", out);
@@ -35,15 +45,15 @@ void print_anf(anf_context &ctx, FILE *out) {
                 fprintf(out, "\t%d <- const %d\n", val.id, val.value);
               }
               if constexpr (std::is_same_v<val_t, anf_call>) {
-                fprintf(out, "\t%d <- %scall %d(", val.res_id,
-                        val.is_tail ? "tail" : "", val.call_id);
-                if (!std::empty(val.arg_ids)) {
-                  fprintf(out, "%d", val.arg_ids.front());
-                  std::for_each(std::begin(val.arg_ids) + 1,
-                                std::end(val.arg_ids),
-                                [out](int id) { fprintf(out, ", %d", id); });
+                if (val.is_tail) {
+                  fprintf(out, "\ttailcall %d(", val.call_id);
+                  print_int_list(val.arg_ids, out);
+                  fputs(")\n", out);
+                } else {
+                  fprintf(out, "\t%d <- call %d(", val.res_id, val.call_id);
+                  print_int_list(val.arg_ids, out);
+                  fputs(")\n", out);
                 }
-                fputs(")\n", out);
               }
               if constexpr (std::is_same_v<val_t, anf_assoc>) {
                 fprintf(out, "\t%d <- alias %d\n", val.id, val.alias);
