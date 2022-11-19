@@ -14,6 +14,7 @@ BISON_TARGET(
 add_executable(lyn
   ${BISON_parser_OUTPUTS}
   src/anf.cpp
+  src/asmgen.cpp
   src/lexer.cpp
   src/main.cpp
   src/print-anf.cpp
