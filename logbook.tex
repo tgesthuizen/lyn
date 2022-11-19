@@ -139,4 +139,35 @@ tibbe@finkpad:~/src/spp$ build/lyn examples/gcd.scm
         tailcall 28(24, 30)
 \end{lstlisting}
 
+\subsection{Notes of today}
+
+Unfortunately I noticed that the ARM standard calling convention
+prohibits tail calls to functions with more than four arguments.
+Think of the following function definition:
+
+\begin{lstlisting}
+  (define f
+    (lambda (a)
+      (g a a a a a a)))
+\end{lstlisting}
+
+The function call to g requires two arguments to be passed on the
+stack.
+In the ARM calling convention the caller must push these arguments to
+the stack, adjusting the stack pointer, and also moves the stack
+pointer back.
+The callee is required to return with the same stack pointer as when
+it was entered.
+Therefore \texttt{f} cannot tail call \texttt{g} because the caller of
+\texttt{f} does not get its stack pointer correctly set back.
+
+For now this is resolved by not allowing tail calls to function with
+more than 4 arguments.
+In the long run only a change to the calling convention can help.
+
+This is pretty bad as the language has no looping constructs, so
+looping with more than 4 variables will eventually blow the stack.
+Multiply this with the absent of closures from the language and you
+get a significant limitation of the programs expressable.
+
 \end{document}
