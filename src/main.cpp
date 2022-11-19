@@ -17,4 +17,5 @@ int main(int argc, char **argv) {
   auto table = lyn::scopify(decls);
   lyn::typecheck(decls, table);
   const auto anfctx = lyn::genanf(decls, table);
+  print_anf(*anfctx, stdout);
 }

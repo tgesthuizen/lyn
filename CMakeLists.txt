@@ -16,6 +16,7 @@ add_executable(lyn
   src/anf.cpp
   src/lexer.cpp
   src/main.cpp
+  src/print-anf.cpp
   src/scopify.cpp
   src/typecheck.cpp
 )
