@@ -37,7 +37,8 @@ public:
                      std::back_inserter(prologue.args),
                      [](const variable_expr &expr) { return expr.id; });
       new_def.blocks.emplace_back();
-      new_def.blocks.back().content.emplace_back(anf_expr{std::move(prologue)});
+      new_def.blocks.back().content.emplace_back(std::move(prologue));
+      new_def.blocks.back().content.emplace_back(anf_adjust_stack{});
       current_def = &new_def;
       current_block = &new_def.blocks.back();
       tail_pos = true;
@@ -142,8 +143,10 @@ public:
     current_def->blocks[this_block_idx].content.push_back(
         anf_cond{cond_id, then_block, else_block});
     current_block = &current_def->blocks[then_block];
+    current_block->content.emplace_back(anf_adjust_stack{});
     const auto then_id = std::visit(*this, expr.then->content);
     current_block = &current_def->blocks[else_block];
+    current_block->content.emplace_back(anf_adjust_stack{});
     const auto else_id = std::visit(*this, expr.els->content);
     if (tail_pos)
       return 0;

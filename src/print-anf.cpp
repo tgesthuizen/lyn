@@ -37,6 +37,9 @@ void print_anf(anf_context &ctx, FILE *out) {
                 }
                 fputs("receive\n", out);
               }
+              if constexpr (std::is_same_v<val_t, anf_adjust_stack>) {
+                fputs("adjust_stack\n", out);
+              }
               if constexpr (std::is_same_v<val_t, anf_global>) {
                 fprintf(out, "\t%d <- global \"%s\"\n", val.id,
                         val.name.c_str());
