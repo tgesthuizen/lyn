@@ -42,6 +42,7 @@ public:
       current_block = &new_def.blocks.back();
       tail_pos = true;
       std::visit(*this, info.expr.body->content);
+      ctx.defs.emplace_back(std::move(new_def));
     }
   }
 
@@ -134,10 +135,10 @@ public:
     current_def->blocks.emplace_back();
     if (!tail_pos)
       current_def->blocks.emplace_back();
-    const auto total_blocks = std::size(current_def->blocks);
-    const auto then_block = total_blocks - 2;
-    const auto else_block = total_blocks - 1;
-    const auto cont_block = total_blocks - 3;
+    const int total_blocks = std::size(current_def->blocks);
+    const int then_block = total_blocks - 2;
+    const int else_block = total_blocks - 1;
+    const int cont_block = total_blocks - 3;
     current_def->blocks[this_block_idx].content.push_back(
         anf_cond{cond_id, then_block, else_block});
     current_block = &current_def->blocks[then_block];
@@ -157,6 +158,9 @@ public:
     return ret_id;
   }
 
+  int get_next_id() const { return next_id; }
+  anf_context &&get_context() && { return std::move(ctx); }
+
 private:
   std::unordered_map<int, std::string_view> id_to_name;
   std::unordered_map<int, int> local_mapping;
@@ -171,13 +175,26 @@ private:
 
 } // namespace
 
-anf_context genanf(std::vector<toplevel_expr> &exprs,
-                   const symbol_table &stable) {
+std::unique_ptr<anf_context, delete_anf>
+genanf(std::vector<toplevel_expr> &exprs, const symbol_table &stable) {
   std::unordered_map<int, std::string_view> name_to_id;
   for (auto &&entry : stable.name_to_id) {
     name_to_id.insert(std::make_pair(entry.second, entry.first));
   }
   anf_generator gen(std::move(name_to_id), stable);
+  for (auto &&expr : exprs) {
+    if (!std::holds_alternative<lambda_expr>(expr.value->content)) {
+      fprintf(stderr, "Will not generate anything for %s!\n",
+              expr.name.c_str());
+      continue;
+    }
+    gen.push_func(expr.name, &std::get<lambda_expr>(expr.value->content));
+  }
+  gen.run();
+  return std::unique_ptr<anf_context, delete_anf>{
+      new anf_context{std::move(gen).get_context()}};
 }
+
+void delete_anf::operator()(anf_context *ctx) { delete ctx; }
 
 } // namespace lyn

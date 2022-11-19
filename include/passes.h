@@ -22,8 +22,13 @@ struct symbol_table {
 std::vector<toplevel_expr> parse(FILE *input);
 symbol_table scopify(std::vector<toplevel_expr> &exprs);
 void typecheck(std::vector<toplevel_expr> &exprs, const symbol_table &stable);
-anf_context genanf(std::vector<toplevel_expr> &exprs,
-                   const symbol_table &stable);
+
+struct delete_anf {
+  void operator()(anf_context *ctx);
+};
+
+std::unique_ptr<anf_context, delete_anf>
+genanf(std::vector<toplevel_expr> &exprs, const symbol_table &stable);
 
 } // namespace lyn
 
