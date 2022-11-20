@@ -56,6 +56,7 @@ void genasm(anf_context &ctx, FILE *out) {
         std::visit(
             [&](auto &&val) {
               using val_t = std::decay_t<decltype(val)>;
+              local_count = local_count;
               if constexpr (std::is_same_v<val_t, anf_receive>) {
                 if (std::size(val.args) > 4u) {
                   throw std::runtime_error{
@@ -74,14 +75,14 @@ void genasm(anf_context &ctx, FILE *out) {
                 fputs("r6, lr}\n", out);
               }
               if constexpr (std::is_same_v<val_t, anf_adjust_stack>) {
-                fprintf(out, "\tsubs sp, #%d\n",
+                fprintf(out, "\tsub sp, sp, #%d\n",
                         (local_count - parent_local_count) * 4);
               }
               if constexpr (std::is_same_v<val_t, anf_global>) {
                 const int stack_slot = stack_offset++;
                 local_to_stack_slot[val.id] = stack_slot;
                 fprintf(out,
-                        "\tldr r0, \"%s\"\n"
+                        "\tldr r0, =\"%s\"\n"
                         "\tstr r0, [sp, #%d]\n",
                         val.name.c_str(), sp_offset_for_local(val.id));
               }
@@ -89,7 +90,7 @@ void genasm(anf_context &ctx, FILE *out) {
                 const int stack_slot = stack_offset++;
                 local_to_stack_slot[val.id] = stack_slot;
                 fprintf(out,
-                        "\tldr r0, =%d\n"
+                        "\tldr r0, =#%d\n"
                         "\tstr r0, [sp, #%d]\n",
                         val.value, sp_offset_for_local(val.id));
               }
@@ -110,14 +111,10 @@ void genasm(anf_context &ctx, FILE *out) {
                           sp_offset_for_local(val.arg_ids[i]));
                 }
                 if (val.is_tail) {
-                  // Unwind the stack frame, restore the old lr.
-                  // There might be a faster way to do this...
                   fprintf(out,
                           "\tadd sp, #%d\n"
-                          "\tpop {r6}\n"
-                          "\tmov r6, lr\n"
                           "\tb r4\n",
-                          (local_count - 1) * 4);
+                          (local_count + 2) * 4);
                 } else {
                   const int stack_slot = stack_offset++;
                   local_to_stack_slot[val.res_id] = stack_slot;
@@ -135,7 +132,7 @@ void genasm(anf_context &ctx, FILE *out) {
                 used_stack_slots[val.else_block] = local_count;
                 fprintf(out,
                         "\tldr r0, [sp, #%d]\n"
-                        "\tbe .L%d\n"
+                        "\tbeq .L%d\n"
                         "\tb .L%d\n",
                         sp_offset_for_local(val.cond_id),
                         val.then_block + label_offset,
