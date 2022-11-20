@@ -38,6 +38,8 @@ void genasm(anf_context &ctx, FILE *out) {
               using val_t = std::decay_t<decltype(val)>;
               if constexpr (std::is_same_v<val_t, anf_receive>) {
                 local_count += std::size(val.args);
+                parent_local_count += std::size(val.args);
+                stack_offset += std::size(val.args);
               }
               if constexpr (std::is_same_v<val_t, anf_global>) {
                 local_count += 1;
