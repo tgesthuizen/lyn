@@ -7,6 +7,7 @@
 \setlength{\parskip}{1.5ex}
 
 \usepackage{listings}
+\usepackage{hyperref}
 
 \begin{document}
 
@@ -182,5 +183,15 @@ and think about a custom calling convention.
 And how interwork with C is going to work.
 And how this is later going to affect the register allocated version.
 Gnarr\ldots
+
+\section{2022-11-20}
+
+\subsection{What happened today?}
+
+I found that Guy Stelle published a blog article about the very same
+problem and proposes the same solution:
+\url{https://eighty-twenty.org/2011/10/01/oo-tail-calls}
+With the small difference that he already has a compiler or two
+working so I can be sure it is a sound idea.
 
 \end{document}
