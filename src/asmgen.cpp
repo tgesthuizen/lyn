@@ -8,7 +8,10 @@
 namespace lyn {
 
 void genasm(anf_context &ctx, FILE *out) {
-  fputs("\t.thumb\n\t.section \".text\", \"ax\"\n", out);
+  fputs("\t.thumb\n"
+        "\t.syntax unified\n"
+        "\t.section \".text\", \"ax\"\n",
+        out);
   int label_offset = 1;
   for (auto &&def : ctx.defs) {
     if (def.global)
@@ -26,7 +29,7 @@ void genasm(anf_context &ctx, FILE *out) {
       int local_count = parent_local_count;
       int stack_offset = local_count;
       const auto sp_offset_for_local = [&](int id) {
-        return (local_count - local_to_stack_slot.at(id)) * 4;
+        return (local_count - local_to_stack_slot.at(id) - 1) * 4;
       };
       fprintf(out, ".L%d:\n", static_cast<int>(label_offset + block_idx));
       for (auto &&expr : block.content)
@@ -34,8 +37,7 @@ void genasm(anf_context &ctx, FILE *out) {
             [&](auto &&val) {
               using val_t = std::decay_t<decltype(val)>;
               if constexpr (std::is_same_v<val_t, anf_receive>) {
-                local_count +=
-                    std::max(std::size(val.args), std::size_t{4u}) + 1;
+                local_count += std::size(val.args);
               }
               if constexpr (std::is_same_v<val_t, anf_global>) {
                 local_count += 1;
@@ -67,7 +69,7 @@ void genasm(anf_context &ctx, FILE *out) {
                   fprintf(out, "r%d, ", i);
                 }
                 parent_local_count = std::size(val.args);
-                fputs("r4, r6, lr}\n", out);
+                fputs("r6, lr}\n", out);
               }
               if constexpr (std::is_same_v<val_t, anf_adjust_stack>) {
                 fprintf(out, "\tsubs sp, #%d\n",
@@ -141,8 +143,8 @@ void genasm(anf_context &ctx, FILE *out) {
                 fprintf(out,
                         "\tldr r0, [sp, #%d]\n"
                         "\tadd sp, #%d\n"
-                        "\tpop {r4, r6, pc}\n",
-                        sp_offset_for_local(val.value), (local_count - 1) * 4);
+                        "\tpop {r6, pc}\n",
+                        sp_offset_for_local(val.value), local_count * 4);
               }
               if constexpr (std::is_same_v<val_t, anf_jump>) {
                 fprintf(out, "\tb .L%d\n", val.target + label_offset);
