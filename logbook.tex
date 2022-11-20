@@ -170,4 +170,17 @@ looping with more than 4 variables will eventually blow the stack.
 Multiply this with the absent of closures from the language and you
 get a significant limitation of the programs expressable.
 
+And yet there is more:
+The current way code is generated every function is first loaded as a
+function pointer and then jumped to.
+However, when a function is now tail called with 4 arguments there is
+nowhere to keep the function pointer.
+While the first problem could be worked around, this one cannot really
+be.
+This was the last nail in the coffin to go back to the drawing board
+and think about a custom calling convention.
+And how interwork with C is going to work.
+And how this is later going to affect the register allocated version.
+Gnarr\ldots
+
 \end{document}
