@@ -20,6 +20,7 @@ add_library(lyn STATIC
   shl.s
   shr.s
   sub.s
+  xor.s
 )
 
 install(TARGETS lyn)
