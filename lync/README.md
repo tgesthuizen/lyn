@@ -13,6 +13,6 @@ Right now it performs the following passes:
    assembly, suitable to be passed to an assembler to yield executable
    code.
 
-Note that the code is of horrible quality at the moment due to the
-lack of register allocation, primitive functions and any kind of
-optimization.
+Note that the generated code is of horrible quality at the moment due
+to the lack of register allocation, primitive functions and any kind
+of optimization.
