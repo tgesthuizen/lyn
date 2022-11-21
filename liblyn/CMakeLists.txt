@@ -8,6 +8,5 @@ add_library(lyn STATIC
   mul.s
   sub.s
 )
-set_source_files_properties(eq.S PROPERTIES LANGUAGE ASM)
 
 install(TARGETS lyn)
