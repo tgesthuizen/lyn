@@ -4,6 +4,7 @@ project(liblyn ASM)
 
 add_library(lyn STATIC
   add.s
+  and.s
   eq.s
   gt.s
   land.s
