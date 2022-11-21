@@ -194,4 +194,68 @@ problem and proposes the same solution:
 With the small difference that he already has a compiler or two
 working so I can be sure it is a sound idea.
 
+The calling convention was adapted in the following ways:
+\begin{itemize}
+\item Arguments passed on the stack are now to be cleared by the
+  callee, not the caller.
+\item Register r4 must not be saved by the callee.
+\end{itemize}
+
+These changes allow proper tail calls, possibly to a function
+pointer.
+The first one is theoretical for now, as functions with more than four
+arguments are still outlawed by the compiler.
+In addition the second rule might be altered to only allow clobbering
+of r4 for functions that have 4 or more arguments as register load is
+quite high for Thumb code and stealing one register away from the
+caller might result in unneccessary performance penalty.
+
+The compiler was adjusted to generate correct code for
+\texttt{examples/identity.scm} and \texttt{examples/gcd.scm}.
+However, it is in no way to be trusted to generate correct code yet.
+
+\section{2022-11-21}
+
+\subsection{What happened today?}
+
+Restructured the project layout so that the compiler now lives in its
+own subdirectory.
+There is no also a runtime library for the target platform.
+
+Wrote a central CMakeLists.txt that's meant to orchestrate a whole
+build.
+This is yet somewhat problematic because of the building of software
+for two different architectures.
+
+The compiler spits out reasonable assembly code for selected
+examples.
+The next step is to get the first executable linked and running it in
+the target environment.
+
+\subsection{Notes of today}
+
+It is tempting to give the compiler some more internal structure and
+divide it into front- and backend.
+However, this must happen without any performance penalty whatsoever.
+In the end this project is about not writing a bloated compiler
+framework.
+
+The list of next tasks seems to be long:
+\begin{itemize}
+\item Lift the 4 argument restriction from functions and calls.
+\item Get the first application running
+\item Streamline the building/linking process of an application
+\item Play around with the compiler for a bit and discover bugs
+\item Think about how register allocation can happen
+\item Think about how primitives calls can happen more effectively
+\item Use a recursive descent parser instead of a Bison parser and see
+  which one is preferable
+\item Stop types from leaking. Best to be achieved by allocating all
+  \texttt{type *}s on a special heap and just dropping the whole thing
+  after typechecking.
+\item Think about a way to link with non-standard functions
+\item Add Bool and Char literals
+\item Add missing division primitive function
+\end{itemize}
+
 \end{document}
