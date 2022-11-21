@@ -9,5 +9,4 @@
         negs    r3, r0
         adcs    r0, r3
         bx      lr
-	str     r0, [sp, #-8]
 	.size "=", .-"="
