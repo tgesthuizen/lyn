@@ -1,6 +1,6 @@
 # lync
 
-lync is the compile for the lyn language.
+lync is the compiler for the lyn language.
 Right now it performs the following passes:
 1. Parse input
 2. scopify: Assigns ids to every variable and resolves lexical
