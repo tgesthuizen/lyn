@@ -5,6 +5,7 @@ project(liblyn ASM)
 add_library(lyn STATIC
   add.s
   and.s
+  div.s
   eq.s
   ge.s
   gt.s
@@ -13,6 +14,7 @@ add_library(lyn STATIC
   lor.s
   lt.s
   lxor.s
+  mod.s
   mul.s
   neg.s
   neq.s
