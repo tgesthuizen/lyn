@@ -11,7 +11,7 @@ BISON_TARGET(
   DEFINES_FILE ${CMAKE_CURRENT_BINARY_DIR}/parser/parser.h
 )
 
-add_executable(lyn
+add_executable(lync
   ${BISON_parser_OUTPUTS}
   src/anf.cpp
   src/asmgen.cpp
@@ -22,8 +22,10 @@ add_executable(lyn
   src/typecheck.cpp
 )
 target_include_directories(
-  lyn
+  lync
   PUBLIC
   include
   ${CMAKE_CURRENT_BINARY_DIR}/parser
 )
+
+install(TARGETS lync)
