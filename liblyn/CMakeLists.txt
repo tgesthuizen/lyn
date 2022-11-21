@@ -9,6 +9,7 @@ add_library(lyn STATIC
   lor.s
   lxor.s
   mul.s
+  neg.s
   neq.s
   shl.s
   shr.s
