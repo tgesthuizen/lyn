@@ -6,7 +6,7 @@
 	.func "!=", "!="
 "!=":
 	subs	r0, r0, r1
-	rsbs    r3, r0, #1
+	subs    r3, r0, #1
 	sbcs    r0, r0, r3
         bx      lr
 	.size "!=", .-"!="

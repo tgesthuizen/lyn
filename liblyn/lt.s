@@ -5,7 +5,7 @@
 	.type "<", %function
 	.func "<", "<"
 "<":
-	ldr	r3, =#1
+	movs	r3, #1
 	cmp	r0, r1
 	blt	.L2
 	eors	r3, r3
