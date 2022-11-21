@@ -9,6 +9,7 @@ add_library(lyn STATIC
   ge.s
   gt.s
   land.s
+  le.s
   lor.s
   lt.s
   lxor.s
