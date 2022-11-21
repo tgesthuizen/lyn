@@ -16,6 +16,7 @@ add_library(lyn STATIC
   mul.s
   neg.s
   neq.s
+  or.s
   shl.s
   shr.s
   sub.s
