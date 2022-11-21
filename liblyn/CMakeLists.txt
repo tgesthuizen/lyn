@@ -7,6 +7,7 @@ add_library(lyn STATIC
   eq.s
   land.s
   lor.s
+  lt.s
   lxor.s
   mul.s
   neg.s
