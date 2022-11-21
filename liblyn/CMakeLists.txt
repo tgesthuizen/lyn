@@ -6,6 +6,7 @@ add_library(lyn STATIC
   add.s
   eq.s
   mul.s
+  neq.s
   sub.s
 )
 
