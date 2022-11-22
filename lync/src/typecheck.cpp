@@ -1,6 +1,7 @@
 #include "expr.h"
 #include "passes.h"
 #include "primitives.h"
+#include "symbol_table.h"
 #include "types.h"
 
 #include <algorithm>

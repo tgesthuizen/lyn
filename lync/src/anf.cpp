@@ -1,6 +1,7 @@
 #include "anf.h"
 #include "expr.h"
 #include "passes.h"
+#include "symbol_table.h"
 
 #include <algorithm>
 #include <utility>
