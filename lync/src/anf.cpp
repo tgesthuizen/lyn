@@ -112,7 +112,14 @@ public:
       current_block->content.emplace_back(anf_assoc{bid, binding.id});
     }
     tail_pos = tail_pos_saved;
-    return std::visit(*this, expr.body->content);
+    if (std::empty(expr.body)) {
+      return 0;
+    }
+    std::for_each(std::begin(expr.body), std::end(expr.body) - 1,
+                  [this](const std::unique_ptr<lyn::expr> &ptr) {
+                    std::visit(*this, ptr->content);
+                  });
+    return std::visit(*this, expr.body.back()->content);
   }
 
   int operator()(begin_expr &expr) {

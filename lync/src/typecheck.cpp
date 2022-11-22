@@ -129,7 +129,13 @@ type *typecheck_t::visit(expr &target) {
       for (auto &&binding : expr.bindings) {
         id_to_type[binding.id] = visit(*binding.body);
       }
-      return visit(*expr.body);
+      if (std::empty(expr.body)) {
+        return unit_t;
+      }
+      std::for_each(
+          std::begin(expr.body), std::end(expr.body) - 1,
+          [this](const std::unique_ptr<lyn::expr> &ptr) { visit(*ptr); });
+      return visit(*expr.body.back());
     }
     if constexpr (std::is_same_v<expr_t, begin_expr>) {
       if (std::empty(expr.exprs)) {

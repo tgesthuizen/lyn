@@ -39,7 +39,9 @@ void alpha_convert_expr(symbol_table &table, lyn::expr *expr) {
           for (auto &&binding : expr.bindings) {
 	    binding.id = table.register_local(binding.name, current_scope);
           }
-          alpha_convert_expr(table, expr.body.get());
+	  for(auto &&ptr: expr.body) {
+	    alpha_convert_expr(table, ptr.get());
+	  }
 	  table.pop_scope(current_scope);
         }
         if constexpr (std::is_same_v<expr_t, begin_expr>) {

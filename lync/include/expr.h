@@ -51,7 +51,7 @@ struct let_binding {
 
 struct let_expr {
   std::vector<let_binding> bindings;
-  std::unique_ptr<expr> body;
+  std::vector<std::unique_ptr<expr>> body;
 };
 
 struct begin_expr {
