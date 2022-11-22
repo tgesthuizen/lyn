@@ -3,8 +3,8 @@
 lync is the compiler for the lyn language.
 Right now it performs the following passes:
 1. Parse input
-2. scopify: Assigns ids to every variable and resolves lexical
-   scoping. A more common name for this pass is alpha conversion.
+2. alpha_convert: Applies alpha conversion to the parse tree to not let
+   the following passes worry about lexical scoping.
 3. typecheck: Typechecks the program using a Hindley-Milner style type
    system.
 4. genanf: Converts the typechecked AST into an intermediate

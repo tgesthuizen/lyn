@@ -16,7 +16,7 @@ const char help_text[] =
 
 std::unique_ptr<lyn::anf_context, lyn::delete_anf> exec_frontend(FILE *input) {
   auto decls = lyn::parse(input);
-  auto table = lyn::scopify(decls);
+  auto table = lyn::alpha_convert(decls);
   std::pmr::monotonic_buffer_resource type_pool;
   lyn::typecheck(decls, table, type_pool);
   return lyn::genanf(decls, table);

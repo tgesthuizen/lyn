@@ -13,12 +13,12 @@ BISON_TARGET(
 
 add_library(compiler STATIC
   ${BISON_parser_OUTPUTS}
+  src/alpha_convert.cpp
   src/anf.cpp
   src/genasm.cpp
   src/lexer.cpp
   src/primitives.cpp
   src/print-anf.cpp
-  src/scopify.cpp
   src/typecheck.cpp
 )
 target_include_directories(compiler PUBLIC include)

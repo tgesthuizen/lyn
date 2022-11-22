@@ -10,7 +10,7 @@ namespace lyn {
 
 namespace {
 
-void scopify_expr(symbol_table &table, lyn::expr *expr) {
+void alpha_convert_expr(symbol_table &table, lyn::expr *expr) {
   std::visit(
       [&](auto &&expr) {
         using expr_t = std::decay_t<decltype(expr)>;
@@ -18,9 +18,9 @@ void scopify_expr(symbol_table &table, lyn::expr *expr) {
           expr.id = table.name_to_id.at(expr.name);
         }
         if constexpr (std::is_same_v<expr_t, apply_expr>) {
-          scopify_expr(table, expr.func.get());
+          alpha_convert_expr(table, expr.func.get());
           for (auto &&arg : expr.args) {
-            scopify_expr(table, arg.get());
+            alpha_convert_expr(table, arg.get());
           }
         }
         if constexpr (std::is_same_v<expr_t, lambda_expr>) {
@@ -34,7 +34,7 @@ void scopify_expr(symbol_table &table, lyn::expr *expr) {
             }
             table.name_to_id[param.name] = param.id;
           }
-          scopify_expr(table, expr.body.get());
+          alpha_convert_expr(table, expr.body.get());
           for (auto &&param : expr.params)
             table.name_to_id.erase(param.name);
           for (auto &&handle : old_values)
@@ -42,7 +42,7 @@ void scopify_expr(symbol_table &table, lyn::expr *expr) {
         }
         if constexpr (std::is_same_v<expr_t, let_expr>) {
           for (auto &&binding : expr.bindings) {
-            scopify_expr(table, binding.body.get());
+            alpha_convert_expr(table, binding.body.get());
           }
           std::vector<typename decltype(table.name_to_id)::node_type>
               old_values;
@@ -53,7 +53,7 @@ void scopify_expr(symbol_table &table, lyn::expr *expr) {
               old_values.emplace_back(std::move(handle));
             table.name_to_id[binding.name] = binding.id;
           }
-          scopify_expr(table, expr.body.get());
+          alpha_convert_expr(table, expr.body.get());
           for (auto &&binding : expr.bindings)
             table.name_to_id.erase(binding.name);
           for (auto &&handle : old_values)
@@ -61,13 +61,13 @@ void scopify_expr(symbol_table &table, lyn::expr *expr) {
         }
         if constexpr (std::is_same_v<expr_t, begin_expr>) {
           for (auto &&subexpr : expr.exprs) {
-            scopify_expr(table, subexpr.get());
+            alpha_convert_expr(table, subexpr.get());
           }
         }
         if constexpr (std::is_same_v<expr_t, if_expr>) {
-          scopify_expr(table, expr.cond.get());
-          scopify_expr(table, expr.then.get());
-          scopify_expr(table, expr.els.get());
+          alpha_convert_expr(table, expr.cond.get());
+          alpha_convert_expr(table, expr.then.get());
+          alpha_convert_expr(table, expr.els.get());
         }
       },
       expr->content);
@@ -75,7 +75,7 @@ void scopify_expr(symbol_table &table, lyn::expr *expr) {
 
 } // namespace
 
-symbol_table scopify(std::vector<toplevel_expr> &exprs) {
+symbol_table alpha_convert(std::vector<toplevel_expr> &exprs) {
   symbol_table table;
   for (auto &&primitive : primitives) {
     table.register_name(primitive.name);
@@ -86,7 +86,7 @@ symbol_table scopify(std::vector<toplevel_expr> &exprs) {
   }
   table.first_local_id = table.next_id;
   for (auto &&decl : exprs) {
-    scopify_expr(table, decl.value.get());
+    alpha_convert_expr(table, decl.value.get());
   }
   return table;
 }

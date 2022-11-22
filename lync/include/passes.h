@@ -15,7 +15,7 @@ struct anf_context;
 struct symbol_table;
 
 std::vector<toplevel_expr> parse(FILE *input);
-symbol_table scopify(std::vector<toplevel_expr> &exprs);
+symbol_table alpha_convert(std::vector<toplevel_expr> &exprs);
 void typecheck(std::vector<toplevel_expr> &exprs, const symbol_table &stable,
                std::pmr::monotonic_buffer_resource &alloc);
 
