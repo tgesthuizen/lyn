@@ -11,51 +11,40 @@ namespace lyn {
 
 namespace {
 
-struct unify_t {
-  bool operator()(int_type lhs, int_type rhs) { return true; }
-  bool operator()(bool_type lhs, bool_type rhs) { return true; }
-  bool operator()(unit_type lhs, unit_type rhs) { return true; }
-
-  bool operator()(const function_type &lhs, const function_type &rhs) {
-    return std::equal(
-               std::begin(lhs.params), std::end(lhs.params),
-               std::begin(rhs.params), std::end(rhs.params),
-               [this](type *lhs, type *rhs) { return visit(*lhs, *rhs); }) &&
-           visit(*lhs.result, *rhs.result);
-  }
-
-  bool operator()(const type_variable &lhs, const type_variable &rhs) {
-    // This should be caught by visit()
-    throw std::runtime_error{"Internal error"};
-  }
-  template <class T> bool operator()(const type_variable &lhs, const T &other) {
-    // This should be caught by visit()
-    throw std::runtime_error{"Internal error"};
-  }
-  template <class T> bool operator()(const T &other, const type_variable &rhs) {
-    // This should be caught by visit()
-    throw std::runtime_error{"Internal error"};
-  }
-  template <class A, class B>
-  std::enable_if_t<!std::is_same_v<A, B>, bool> operator()(const A &lhs,
-                                                           const B &rhs) {
-    return false;
-  }
-
-  bool visit(type &lhs, type &rhs) {
-    if (std::holds_alternative<type_variable>(lhs.content)) {
-      auto &&var = std::get<type_variable>(lhs.content);
-      if (!var.target) {
-        var.target = &rhs;
-        return true;
-      }
-      return visit(*var.target, rhs);
-    }
-    if (std::holds_alternative<type_variable>(rhs.content))
-      return visit(rhs, lhs);
-    return std::visit(*this, lhs.content, rhs.content);
-  }
-};
+bool unify(type *lhs, type *rhs) {
+  return std::visit(
+      [=](auto &&lhs_val, auto &&rhs_val) {
+        using lhs_t = std::decay_t<decltype(lhs_val)>;
+        using rhs_t = std::decay_t<decltype(rhs_val)>;
+        if constexpr (std::is_same_v<lhs_t, type_variable>) {
+          if (!lhs_val.target) {
+            lhs_val.target = rhs;
+            return true;
+          }
+          return unify(lhs_val.target, rhs);
+        }
+        if (std::is_same_v<rhs_t, type_variable>) {
+          return unify(rhs, lhs);
+        }
+        constexpr bool types_match = std::is_same_v<lhs_t, rhs_t>;
+        if (!types_match) {
+          return false;
+        }
+        if (std::is_same_v<lhs_t, int_type> ||
+            std::is_same_v<lhs_t, bool_type> ||
+            std::is_same_v<lhs_t, unit_type>) {
+          return true;
+        }
+        if constexpr (types_match && std::is_same_v<lhs_t, function_type>) {
+          return std::equal(std::begin(lhs_val.params),
+                            std::end(lhs_val.params),
+                            std::begin(rhs_val.params),
+                            std::end(rhs_val.params), unify) &&
+                 unify(lhs_val.result, rhs_val.result);
+        }
+      },
+      lhs->content, rhs->content);
+}
 
 type *unwrap_typevars(type *t) {
   while (true) {
@@ -100,7 +89,8 @@ public:
     }
     type *const result = new (alloc_type()) type{type_variable{}};
     ft.result = result;
-    unify_t{}.visit(*new (alloc_type()) type{std::move(ft)}, *ftype);
+    if (!unify(new (alloc_type()) type{std::move(ft)}, ftype))
+      throw std::runtime_error{"Cannot unify function application"};
     return result;
   }
 
@@ -134,12 +124,12 @@ public:
 
   type *operator()(if_expr &expr) {
     auto *const cond_t = visit(*expr.cond);
-    if (!unify_t{}.visit(*bool_t, *cond_t)) {
+    if (!unify(bool_t, cond_t)) {
       throw std::runtime_error{"Not a valid condition"};
     }
     auto *const then_t = visit(*expr.then);
     auto *const else_t = visit(*expr.els);
-    if (!unify_t{}.visit(*then_t, *else_t)) {
+    if (!unify(then_t, else_t)) {
       throw std::runtime_error{"Branches have different type"};
     }
     return then_t;
