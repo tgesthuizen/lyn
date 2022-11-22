@@ -67,77 +67,7 @@ public:
     unit_t = new (alloc_type()) type{unit_type{}};
   }
 
-  type *operator()(constant_expr &expr) {
-    switch (expr.type) {
-    case constant_type::Int:
-      return int_t;
-    case constant_type::Bool:
-      return bool_t;
-    case constant_type::Unit:
-      return unit_t;
-    }
-    throw std::invalid_argument{"Reached beyond end of switch"};
-  }
-
-  type *operator()(variable_expr &expr) { return id_to_type.at(expr.id); }
-
-  type *operator()(apply_expr &expr) {
-    auto *const ftype = visit(*expr.func);
-    function_type ft;
-    for (auto &&arg : expr.args) {
-      ft.params.push_back(visit(*arg));
-    }
-    type *const result = new (alloc_type()) type{type_variable{}};
-    ft.result = result;
-    if (!unify(new (alloc_type()) type{std::move(ft)}, ftype))
-      throw std::runtime_error{"Cannot unify function application"};
-    return result;
-  }
-
-  type *operator()(lambda_expr &expr) {
-    std::vector<type *> args;
-    for (auto &&param : expr.params) {
-      type *const arg = new (alloc_type()) type{type_variable{}};
-      id_to_type[param.id] = arg;
-      args.push_back(arg);
-    }
-    auto *const ret = visit(*expr.body);
-    return new (alloc_type()) type{function_type{std::move(args), ret}};
-  }
-
-  type *operator()(let_expr &expr) {
-    for (auto &&binding : expr.bindings) {
-      id_to_type[binding.id] = visit(*binding.body);
-    }
-    return visit(*expr.body);
-  }
-
-  type *operator()(begin_expr &expr) {
-    if (std::empty(expr.exprs)) {
-      return unit_t;
-    }
-    std::for_each(
-        std::begin(expr.exprs), std::end(expr.exprs) - 1,
-        [this](const std::unique_ptr<lyn::expr> &ptr) { visit(*ptr); });
-    return visit(*expr.exprs.back());
-  }
-
-  type *operator()(if_expr &expr) {
-    auto *const cond_t = visit(*expr.cond);
-    if (!unify(bool_t, cond_t)) {
-      throw std::runtime_error{"Not a valid condition"};
-    }
-    auto *const then_t = visit(*expr.then);
-    auto *const else_t = visit(*expr.els);
-    if (!unify(then_t, else_t)) {
-      throw std::runtime_error{"Branches have different type"};
-    }
-    return then_t;
-  }
-
-  type *visit(expr &target) {
-    return target.type = std::visit(*this, target.content);
-  }
+  type *visit(expr &target);
 
   void setup_primitive_types(const symbol_table &stable);
   void register_typevar(int id) {
@@ -153,6 +83,76 @@ private:
   type *bool_t;
   type *unit_t;
 };
+
+type *typecheck_t::visit(expr &target) {
+  const auto typecheck_value = [this](auto &&expr) {
+    using expr_t = std::decay_t<decltype(expr)>;
+    if constexpr (std::is_same_v<expr_t, constant_expr>) {
+      switch (expr.type) {
+      case constant_type::Int:
+        return int_t;
+      case constant_type::Bool:
+        return bool_t;
+      case constant_type::Unit:
+        return unit_t;
+      }
+      throw std::invalid_argument{"Reached beyond end of switch"};
+    }
+    if constexpr (std::is_same_v<expr_t, variable_expr>) {
+      return id_to_type.at(expr.id);
+    }
+    if constexpr (std::is_same_v<expr_t, apply_expr>) {
+      auto *const ftype = visit(*expr.func);
+      function_type ft;
+      for (auto &&arg : expr.args) {
+        ft.params.push_back(visit(*arg));
+      }
+      type *const result = new (alloc_type()) type{type_variable{}};
+      ft.result = result;
+      if (!unify(new (alloc_type()) type{std::move(ft)}, ftype))
+        throw std::runtime_error{"Cannot unify function application"};
+      return result;
+    }
+    if constexpr (std::is_same_v<expr_t, lambda_expr>) {
+      std::vector<type *> args;
+      for (auto &&param : expr.params) {
+        type *const arg = new (alloc_type()) type{type_variable{}};
+        id_to_type[param.id] = arg;
+        args.push_back(arg);
+      }
+      auto *const ret = visit(*expr.body);
+      return new (alloc_type()) type{function_type{std::move(args), ret}};
+    }
+    if constexpr (std::is_same_v<expr_t, let_expr>) {
+      for (auto &&binding : expr.bindings) {
+        id_to_type[binding.id] = visit(*binding.body);
+      }
+      return visit(*expr.body);
+    }
+    if constexpr (std::is_same_v<expr_t, begin_expr>) {
+      if (std::empty(expr.exprs)) {
+        return unit_t;
+      }
+      std::for_each(
+          std::begin(expr.exprs), std::end(expr.exprs) - 1,
+          [this](const std::unique_ptr<lyn::expr> &ptr) { visit(*ptr); });
+      return visit(*expr.exprs.back());
+    }
+    if constexpr (std::is_same_v<expr_t, if_expr>) {
+      auto *const cond_t = visit(*expr.cond);
+      if (!unify(bool_t, cond_t)) {
+        throw std::runtime_error{"Not a valid condition"};
+      }
+      auto *const then_t = visit(*expr.then);
+      auto *const else_t = visit(*expr.els);
+      if (!unify(then_t, else_t)) {
+        throw std::runtime_error{"Branches have different type"};
+      }
+      return then_t;
+    }
+  };
+  return target.type = std::visit(typecheck_value, target.content);
+}
 
 void typecheck_t::setup_primitive_types(const symbol_table &stable) {
   const auto register_type = [&](std::string_view name, type *t) {
