@@ -25,27 +25,22 @@ The language consists of the following expressions:\\[1.5ex]
 \begin{tabularx}{\linewidth}{lX}
   \texttt{c} & Constant value\\
   \texttt{x} & Variable references\\
-  \texttt{(f arg ...)} & Function application\\
-  \texttt{(lambda (params ...) body)} & Abstraction\\
-  \texttt{(let ((var val)...) expr)} & Let expressions:
+  \texttt{(f arg \ldots)} & Function application\\
+  \texttt{(lambda (params \ldots) body)} & Abstraction\\
+  \texttt{(let ((var val) \ldots) expr \ldots)} & Let expressions:
   Binds \texttt{val}s to the names \texttt{var}s for the duration of
-  \texttt{expr}\\
-  \texttt{(let lp ((var val) ...) expr)} & Calls a function lp with
-  parameters \texttt{var}s, initially bound to \texttt{val}s.
-  The \texttt{expr} may call \texttt{lp}.
-  This form allows to build loops.\\
-  \texttt{(begin e1 e2 ...)} & Evaluate the expressions in order and
-  return the result of the last one\\
-  \texttt{(if cond then expr1 else expr2)} & Defines a conditional
+  the \texttt{expr}essions.
+  Returns the result of the last expression in the body or the Unit
+  value in case there are no body expressions.\\
+  \texttt{(if cond expr1 expr2)} & Defines a conditional
   expression, evaluating \texttt{expr1} if \texttt{cond} is
   \texttt{True}, \texttt{expr2} otherwise\\
 \end{tabularx}
 
 At the top level the following form is available:\\[1.5ex]
 \begin{tabularx}{\linewidth}{lX}
-  \texttt{(define (fun params ...) expr)} & Defines a function
-  \texttt{fun} with parameters named \texttt{params} and the body
-  \texttt{expr}.
+  \texttt{(define name value)} & Defines a global \texttt{name} to
+                                 \texttt{value}.
 \end{tabularx}
 
 \section{Types}
@@ -114,6 +109,9 @@ The following functions are built-in:\\[1.5ex]
   \texttt{xor} & \texttt{Bool} \rightarrow \texttt{Bool} \rightarrow
   \texttt{Bool} & \texttt{True} if exactly one of the operands is
   \texttt{True}\\
+  \texttt{true} & \texttt{Bool} & The true constant\\
+  \texttt{false} & \texttt{Bool} & The false constant\\
+  \texttt{<>} & \texttt{Unit} & The unit constant\\
 \end{tabularx}
 
 \section{Examples}
