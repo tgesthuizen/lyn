@@ -2,6 +2,7 @@
 #define LYN_PASSES_H
 
 #include <cstdio>
+#include <memory_resource>
 #include <string_view>
 #include <unordered_map>
 #include <vector>
@@ -21,7 +22,8 @@ struct symbol_table {
 
 std::vector<toplevel_expr> parse(FILE *input);
 symbol_table scopify(std::vector<toplevel_expr> &exprs);
-void typecheck(std::vector<toplevel_expr> &exprs, const symbol_table &stable);
+void typecheck(std::vector<toplevel_expr> &exprs, const symbol_table &stable,
+               std::pmr::monotonic_buffer_resource &alloc);
 
 struct delete_anf {
   void operator()(anf_context *ctx);

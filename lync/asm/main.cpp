@@ -15,7 +15,8 @@ int main(int argc, char **argv) {
   }
   auto decls = lyn::parse(input);
   auto table = lyn::scopify(decls);
-  lyn::typecheck(decls, table);
+  std::pmr::monotonic_buffer_resource type_pool;
+  lyn::typecheck(decls, table, type_pool);
   const auto anfctx = lyn::genanf(decls, table);
   genasm(*anfctx, stdout);
 }
