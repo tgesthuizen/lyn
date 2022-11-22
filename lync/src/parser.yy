@@ -11,26 +11,18 @@
 %code requires {
 #include "expr.h"
 #include "location.h"
-
 namespace lyn {
-class lexer;
+  class driver;
 }
-
 }
 %code {
 #include "token.h"
-namespace lyn {
-parser::symbol_type yylex(lexer &lex, [[maybe_unused]] std::vector<toplevel_expr> &defines) {
-  return lex.lex();
-}
-}
 }
 %locations
 %define api.location.type {location}
 %define parse.trace
 
-%param { lexer &lex }
-%param { std::vector<toplevel_expr> &defines }
+%param { driver &drv }
 
 %define api.token.prefix {TOK_}
 %token
@@ -56,7 +48,7 @@ parser::symbol_type yylex(lexer &lex, [[maybe_unused]] std::vector<toplevel_expr
 %start document;
 
 document: %empty                                 {}
-        | document define                        { defines.push_back(std::move($2)); }
+        | document define                        { drv.defines.push_back(std::move($2)); }
 
 define: LPAR DEFINE IDENTIFIER expr RPAR         { $$ = {std::move($3), 0, std::move($4)}; }
 

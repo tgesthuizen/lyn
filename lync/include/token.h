@@ -1,8 +1,6 @@
 #ifndef LYN_TOKEN_H
 #define LYN_TOKEN_H
 
-#include "parser.h"
-
 namespace lyn {
 
 struct lexer {
@@ -12,6 +10,13 @@ struct lexer {
 
   parser::symbol_type lex();
 };
+
+struct driver {
+  lexer lex;
+  std::vector<toplevel_expr> defines;
+};
+
+inline parser::symbol_type yylex(driver &drv) { return drv.lex.lex(); }
 
 } // namespace lyn
 

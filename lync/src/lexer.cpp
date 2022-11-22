@@ -76,14 +76,13 @@ parser::symbol_type lexer::lex() {
 void parser::error(const location &loc, const std::string &what) {}
 
 std::vector<toplevel_expr> parse(FILE *f) {
-  std::vector<toplevel_expr> defines;
-  lexer lex{f, 1, 1};
-  parser parser{lex, defines};
+  driver drv{lexer{f, 1, 1}, {}};
+  parser parser{drv};
   // parser.set_debug_level(2);
   if (parser.parse() != 0) {
     return {};
   }
-  return defines;
+  return std::move(drv.defines);
 };
 
 } // namespace lyn
