@@ -11,28 +11,23 @@ BISON_TARGET(
   DEFINES_FILE ${CMAKE_CURRENT_BINARY_DIR}/parser/parser.h
 )
 
-add_library(frontend STATIC
+add_library(compiler STATIC
   ${BISON_parser_OUTPUTS}
   src/anf.cpp
+  src/genasm.cpp
   src/lexer.cpp
+  src/print-anf.cpp
   src/scopify.cpp
   src/typecheck.cpp
 )
-target_include_directories(frontend PUBLIC include)
-target_include_directories(frontend PRIVATE
+target_include_directories(compiler PUBLIC include)
+target_include_directories(compiler PRIVATE
   ${CMAKE_CURRENT_BINARY_DIR}/parser
 )
 
 add_executable(lync
-  asm/genasm.cpp
-  asm/main.cpp
+  main.cpp
 )
-target_link_libraries(lync PUBLIC frontend)
-
-add_executable(print-anf
-  print-anf/print-anf.cpp
-  print-anf/main.cpp
-)
-target_link_libraries(print-anf PUBLIC frontend)
+target_link_libraries(lync PUBLIC compiler)
 
 install(TARGETS lync)
