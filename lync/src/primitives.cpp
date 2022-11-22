@@ -2,7 +2,7 @@
 
 namespace lyn {
 
-const primitive_info primitives[21] = {
+const primitive_info primitives[number_of_primitives] = {
     {"+", primitive_type::int_int_int},
     {"-", primitive_type::int_int_int},
     {"*", primitive_type::int_int_int},
@@ -24,5 +24,8 @@ const primitive_info primitives[21] = {
     {"or", primitive_type::bool_bool_bool},
     {"and", primitive_type::bool_bool_bool},
     {"xor", primitive_type::bool_bool_bool},
+    {"true", primitive_type::bool_},
+    {"false", primitive_type::bool_},
+    {"<>", primitive_type::unit},
 };
 }

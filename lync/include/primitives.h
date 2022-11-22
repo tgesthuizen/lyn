@@ -11,6 +11,8 @@ enum class primitive_type {
   int_int_bool,
   bool_bool_bool,
   bool_bool,
+  bool_,
+  unit,
 };
 
 struct primitive_info {
@@ -18,7 +20,7 @@ struct primitive_info {
   primitive_type type;
 };
 
-inline constexpr int number_of_primitives = 21;
+inline constexpr int number_of_primitives = 24;
 extern const primitive_info primitives[number_of_primitives];
 
 } // namespace lyn
