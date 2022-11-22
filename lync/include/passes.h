@@ -3,8 +3,6 @@
 
 #include <cstdio>
 #include <memory_resource>
-#include <string_view>
-#include <unordered_map>
 #include <vector>
 
 namespace lyn {

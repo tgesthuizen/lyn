@@ -18,10 +18,8 @@ struct fun_info {
 
 class anf_generator {
 public:
-  explicit anf_generator(std::unordered_map<int, std::string_view> id_to_name,
-                         const symbol_table &stable)
-      : id_to_name{std::move(id_to_name)}, stable{stable},
-        next_id{stable.next_id} {}
+  explicit anf_generator(const symbol_table &stable)
+      : stable{stable}, next_id{stable.get_next_id()} {}
 
   void push_func(std::string name, lambda_expr *ptr) {
     funcs_to_generate.push_back(fun_info{std::move(name), *ptr, true});
@@ -70,7 +68,7 @@ public:
   }
 
   int operator()(variable_expr &expr) {
-    if (expr.id >= stable.first_local_id) {
+    if (expr.id >= stable.get_first_local_id()) {
       if (tail_pos)
         current_block->content.emplace_back(anf_return{expr.id});
       return expr.id;
@@ -166,7 +164,6 @@ public:
   anf_context &&get_context() && { return std::move(ctx); }
 
 private:
-  std::unordered_map<int, std::string_view> id_to_name;
   std::unordered_map<int, int> local_mapping;
   const symbol_table &stable;
   std::vector<fun_info> funcs_to_generate;
@@ -181,11 +178,7 @@ private:
 
 std::unique_ptr<anf_context, delete_anf>
 genanf(std::vector<toplevel_expr> &exprs, const symbol_table &stable) {
-  std::unordered_map<int, std::string_view> name_to_id;
-  for (auto &&entry : stable.name_to_id) {
-    name_to_id.insert(std::make_pair(entry.second, entry.first));
-  }
-  anf_generator gen(std::move(name_to_id), stable);
+  anf_generator gen(stable);
   for (auto &&expr : exprs) {
     if (!std::holds_alternative<lambda_expr>(expr.value->content)) {
       fprintf(stderr, "Will not generate anything for %s!\n",

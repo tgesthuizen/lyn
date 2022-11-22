@@ -166,7 +166,7 @@ void typecheck_t::setup_primitive_types(const symbol_table &stable) {
   type *uni_bool = new (alloc_type()) type{function_type{{bool_t}, bool_t}};
 
   for (auto &&primitive : primitives) {
-    id_to_type[stable.name_to_id.at(primitive.name)] = [&] {
+    id_to_type[stable[primitive.name]] = [&] {
       switch (primitive.type) {
       case primitive_type::int_int_int:
         return bi_int;

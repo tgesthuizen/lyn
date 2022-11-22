@@ -15,7 +15,7 @@ void alpha_convert_expr(symbol_table &table, lyn::expr *expr) {
       [&](auto &&expr) {
         using expr_t = std::decay_t<decltype(expr)>;
         if constexpr (std::is_same_v<expr_t, variable_expr>) {
-          expr.id = table.name_to_id.at(expr.name);
+          expr.id = table[expr.name];
         }
         if constexpr (std::is_same_v<expr_t, apply_expr>) {
           alpha_convert_expr(table, expr.func.get());
@@ -24,40 +24,23 @@ void alpha_convert_expr(symbol_table &table, lyn::expr *expr) {
           }
         }
         if constexpr (std::is_same_v<expr_t, lambda_expr>) {
-          std::vector<typename decltype(table.name_to_id)::node_type>
-              old_values;
-          old_values.reserve(std::size(expr.params));
+          scope current_scope;
           for (auto &&param : expr.params) {
-            param.id = table.next_id++;
-            if (auto handle = table.name_to_id.extract(param.name)) {
-              old_values.emplace_back(std::move(handle));
-            }
-            table.name_to_id[param.name] = param.id;
+            param.id = table.register_local(param.name, current_scope);
           }
           alpha_convert_expr(table, expr.body.get());
-          for (auto &&param : expr.params)
-            table.name_to_id.erase(param.name);
-          for (auto &&handle : old_values)
-            table.name_to_id.insert(std::move(handle));
+          table.pop_scope(current_scope);
         }
         if constexpr (std::is_same_v<expr_t, let_expr>) {
           for (auto &&binding : expr.bindings) {
             alpha_convert_expr(table, binding.body.get());
           }
-          std::vector<typename decltype(table.name_to_id)::node_type>
-              old_values;
-          old_values.reserve(std::size(expr.bindings));
+	  scope current_scope;
           for (auto &&binding : expr.bindings) {
-            binding.id = table.next_id++;
-            if (auto &&handle = table.name_to_id.extract(binding.name))
-              old_values.emplace_back(std::move(handle));
-            table.name_to_id[binding.name] = binding.id;
+	    binding.id = table.register_local(binding.name, current_scope);
           }
           alpha_convert_expr(table, expr.body.get());
-          for (auto &&binding : expr.bindings)
-            table.name_to_id.erase(binding.name);
-          for (auto &&handle : old_values)
-            table.name_to_id.insert(std::move(handle));
+	  table.pop_scope(current_scope);
         }
         if constexpr (std::is_same_v<expr_t, begin_expr>) {
           for (auto &&subexpr : expr.exprs) {
@@ -78,13 +61,13 @@ void alpha_convert_expr(symbol_table &table, lyn::expr *expr) {
 symbol_table alpha_convert(std::vector<toplevel_expr> &exprs) {
   symbol_table table;
   for (auto &&primitive : primitives) {
-    table.register_name(primitive.name);
+    table.register_primitive(primitive.name);
   }
-  table.first_global_id = table.next_id;
+  table.start_global_registering();
   for (auto &&decl : exprs) {
-    decl.id = table.register_name(decl.name);
+    decl.id = table.register_global(decl.name);
   }
-  table.first_local_id = table.next_id;
+  table.start_local_registering();
   for (auto &&decl : exprs) {
     alpha_convert_expr(table, decl.value.get());
   }
