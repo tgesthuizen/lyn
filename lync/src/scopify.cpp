@@ -1,5 +1,6 @@
 #include "expr.h"
 #include "passes.h"
+#include "primitives.h"
 
 #include <string_view>
 #include <unordered_map>
@@ -7,11 +8,6 @@
 namespace lyn {
 
 namespace {
-
-const char *const builtins[]{
-    "+", "-",  "*", "/", "%",  "shl", "shr", "lor", "land", "lxor", "neg",
-    "=", "!=", "<", ">", "<=", ">=",  "not", "or",  "and",  "xor",
-};
 
 class scopify_t {
 public:
@@ -90,8 +86,8 @@ private:
 symbol_table scopify(std::vector<toplevel_expr> &exprs) {
   symbol_table table;
   scopify_t functor{table};
-  for (auto &&pname : builtins) {
-    functor.register_name(pname);
+  for (auto &&primitive : primitives) {
+    functor.register_name(primitive.name);
   }
   table.first_global_id = table.next_id;
   for (auto &&decl : exprs) {

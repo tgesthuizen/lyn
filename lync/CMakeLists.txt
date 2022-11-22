@@ -16,6 +16,7 @@ add_library(compiler STATIC
   src/anf.cpp
   src/genasm.cpp
   src/lexer.cpp
+  src/primitives.cpp
   src/print-anf.cpp
   src/scopify.cpp
   src/typecheck.cpp

@@ -1,5 +1,6 @@
 #include "expr.h"
 #include "passes.h"
+#include "primitives.h"
 #include "types.h"
 
 #include <algorithm>
@@ -155,37 +156,31 @@ type *typecheck_t::visit(expr &target) {
 }
 
 void typecheck_t::setup_primitive_types(const symbol_table &stable) {
-  const auto register_type = [&](std::string_view name, type *t) {
-    id_to_type[stable.name_to_id.at(name)] = t;
-  };
   type *bi_int = new (alloc_type()) type{function_type{{int_t, int_t}, int_t}};
-  register_type("+", bi_int);
-  register_type("-", bi_int);
-  register_type("*", bi_int);
-  register_type("/", bi_int);
-  register_type("%", bi_int);
-  register_type("shl", bi_int);
-  register_type("shr", bi_int);
-  register_type("lor", bi_int);
-  register_type("land", bi_int);
-  register_type("lxor", bi_int);
   type *uni_int = new (alloc_type()) type{function_type{{int_t}, int_t}};
-  register_type("neg", uni_int);
   type *comp_int =
       new (alloc_type()) type{function_type{{int_t, int_t}, bool_t}};
-  register_type("=", comp_int);
-  register_type("!=", comp_int);
-  register_type("<", comp_int);
-  register_type(">", comp_int);
-  register_type("<=", comp_int);
-  register_type(">=", comp_int);
-  type *uni_bool = new (alloc_type()) type{function_type{{bool_t}, bool_t}};
-  register_type("not", uni_bool);
   type *bi_bool =
       new (alloc_type()) type{function_type{{bool_t, bool_t}, bool_t}};
-  register_type("or", bi_bool);
-  register_type("and", bi_bool);
-  register_type("xor", bi_bool);
+  type *uni_bool = new (alloc_type()) type{function_type{{bool_t}, bool_t}};
+
+  for (auto &&primitive : primitives) {
+    id_to_type[stable.name_to_id.at(primitive.name)] = [&] {
+      switch (primitive.type) {
+      case primitive_type::int_int_int:
+        return bi_int;
+      case primitive_type::int_int:
+        return uni_int;
+      case primitive_type::int_int_bool:
+        return comp_int;
+      case primitive_type::bool_bool_bool:
+        return bi_bool;
+      case primitive_type::bool_bool:
+        return uni_bool;
+      }
+      throw std::invalid_argument{"Invalid enum value"};
+    }();
+  }
 }
 
 } // namespace
