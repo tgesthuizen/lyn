@@ -16,7 +16,7 @@ namespace lyn {
 }
 }
 %code {
-#include "token.h"
+#include "driver.h"
 }
 %locations
 %define api.location.type {location}
