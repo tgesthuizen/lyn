@@ -40,7 +40,7 @@ int main(int argc, char **argv) {
       if (std::string_view("-") == optarg) {
         target = stdout;
       } else {
-        target = fopen(optarg, "r");
+        target = fopen(optarg, "w");
         if (!target) {
           fprintf(stderr, "Could not open output file \"%s\"\n", optarg);
           mode = stop;
