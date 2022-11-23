@@ -8,7 +8,8 @@
 namespace lyn {
 
 void genasm(anf_context &ctx, FILE *out) {
-  fputs("\t.thumb\n"
+  fputs("\t.arch armv5t\n"
+	"\t.thumb\n"
         "\t.syntax unified\n"
         "\t.section \".text\", \"ax\"\n",
         out);
@@ -24,7 +25,6 @@ void genasm(anf_context &ctx, FILE *out) {
 
     std::unordered_map<int, int> local_to_stack_slot;
     std::unordered_map<std::size_t, int> used_stack_slots;
-    const auto call_poline = label_offset + std::size(def.blocks);
     used_stack_slots[0] = 0;
     for (std::size_t block_idx = 0; block_idx != std::size(def.blocks);
          ++block_idx) {
@@ -124,9 +124,9 @@ void genasm(anf_context &ctx, FILE *out) {
                   const int stack_slot = stack_offset++;
                   local_to_stack_slot[val.res_id] = stack_slot;
                   fprintf(out,
-                          "\tbl .L%d\n"
+                          "\tblx r4\n"
                           "\tstr r0, [sp, #%d]\n",
-                          call_poline, sp_offset_for_local(val.res_id));
+                          sp_offset_for_local(val.res_id));
                 }
               }
               if constexpr (std::is_same_v<val_t, anf_assoc>) {
@@ -166,13 +166,10 @@ void genasm(anf_context &ctx, FILE *out) {
       }
     }
     fprintf(out,
-            ".L%d:\n"
-            "\tbx r4\n"
             "\t.pool\n"
             "\t.size \"%s\", .-\"%s\"\n",
-            label_offset + std::size(def.blocks), def.name.c_str(),
-            def.name.c_str());
-    label_offset += std::size(def.blocks) + 1;
+            def.name.c_str(), def.name.c_str());
+    label_offset += std::size(def.blocks);
   }
 }
 
