@@ -1,9 +1,9 @@
-#include <cstdio>
-#include <unistd.h>
-
 #include "expr.h"
 #include "passes.h"
 #include "symbol_table.h"
+#include <cstdio>
+#include <stdexcept>
+#include <unistd.h>
 
 namespace {
 
@@ -24,7 +24,7 @@ std::unique_ptr<lyn::anf_context, lyn::delete_anf> exec_frontend(FILE *input) {
 
 } // namespace
 
-int main(int argc, char **argv) {
+int main(int argc, char **argv) try {
   enum mode_t {
     stop,
     syntax_only,
@@ -113,4 +113,7 @@ int main(int argc, char **argv) {
     }
     break;
   }
+} catch (const std::exception &e) {
+  fprintf(stderr, "%s\n", e.what());
+  return -1;
 }
