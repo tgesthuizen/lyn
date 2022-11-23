@@ -16,11 +16,15 @@ void genasm(anf_context &ctx, FILE *out) {
   for (auto &&def : ctx.defs) {
     if (def.global)
       fprintf(out, "\t.global \"%s\"\n", def.name.c_str());
-    fprintf(out, "\t.type \"%s\", %%function\n\"%s\":\n", def.name.c_str(),
-            def.name.c_str());
+    fprintf(out,
+            "\t.type \"%s\", %%function\n"
+            "\t.thumb_func\n"
+            "\"%s\":\n",
+            def.name.c_str(), def.name.c_str());
 
     std::unordered_map<int, int> local_to_stack_slot;
     std::unordered_map<std::size_t, int> used_stack_slots;
+    const auto call_poline = label_offset + std::size(def.blocks);
     used_stack_slots[0] = 0;
     for (std::size_t block_idx = 0; block_idx != std::size(def.blocks);
          ++block_idx) {
@@ -31,6 +35,7 @@ void genasm(anf_context &ctx, FILE *out) {
       const auto sp_offset_for_local = [&](int id) {
         return (local_count - local_to_stack_slot.at(id) - 1) * 4;
       };
+
       fprintf(out, ".L%d:\n", static_cast<int>(label_offset + block_idx));
       for (auto &&expr : block.content)
         std::visit(
@@ -113,15 +118,15 @@ void genasm(anf_context &ctx, FILE *out) {
                 if (val.is_tail) {
                   fprintf(out,
                           "\tadd sp, #%d\n"
-                          "\tb r4\n",
+                          "\tbx r4\n",
                           (local_count + 2) * 4);
                 } else {
                   const int stack_slot = stack_offset++;
                   local_to_stack_slot[val.res_id] = stack_slot;
                   fprintf(out,
-                          "\tbl r4\n"
+                          "\tbl .L%d\n"
                           "\tstr r0, [sp, #%d]\n",
-                          sp_offset_for_local(val.res_id));
+                          call_poline, sp_offset_for_local(val.res_id));
                 }
               }
               if constexpr (std::is_same_v<val_t, anf_assoc>) {
@@ -132,11 +137,12 @@ void genasm(anf_context &ctx, FILE *out) {
                 used_stack_slots[val.else_block] = local_count;
                 fprintf(out,
                         "\tldr r0, [sp, #%d]\n"
+                        "\ttst r0, r0\n"
                         "\tbeq .L%d\n"
-                        "\tb .L%d\n",
+                        "\tb   .L%d\n",
                         sp_offset_for_local(val.cond_id),
-                        val.then_block + label_offset,
-                        val.else_block + label_offset);
+                        val.else_block + label_offset,
+                        val.then_block + label_offset);
               }
               if constexpr (std::is_same_v<val_t, anf_return>) {
                 fprintf(out,
@@ -160,9 +166,13 @@ void genasm(anf_context &ctx, FILE *out) {
       }
     }
     fprintf(out,
+            ".L%d:\n"
+            "\tbx r4\n"
             "\t.pool\n"
             "\t.size \"%s\", .-\"%s\"\n",
-            def.name.c_str(), def.name.c_str());
+            label_offset + std::size(def.blocks), def.name.c_str(),
+            def.name.c_str());
+    label_offset += std::size(def.blocks) + 1;
   }
 }
 
