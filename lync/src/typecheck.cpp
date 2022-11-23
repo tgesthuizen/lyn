@@ -184,6 +184,10 @@ void typecheck_t::setup_primitive_types(const symbol_table &stable) {
         return bi_bool;
       case primitive_type::bool_bool:
         return uni_bool;
+      case primitive_type::bool_:
+        return bool_t;
+      case primitive_type::unit:
+        return unit_t;
       }
       throw std::invalid_argument{"Invalid enum value"};
     }();
