@@ -442,4 +442,15 @@ A few things are noteworthy:
   For now this is of lesser importance however.
 \end{itemize}
 
+\hline
+
+Quick update: After a short investigation it turns there is a
+\texttt{blx} instruction to a register in Thumb1.
+I might have missed that by not emitting a \texttt{blx} but a
+\texttt{bl} instead because I know for sure that I won't need the
+``x'' part in my compiler.
+Anyway, after forcing ``armv5t'' as the target architecture of the
+assembler and fixing this issue the compiler emits pure and nice
+Thumb1 instructions.
+
 \end{document}
