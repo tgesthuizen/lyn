@@ -258,4 +258,188 @@ The list of next tasks seems to be long:
 \item Add missing division primitive function
 \end{itemize}
 
+\section{2022-11-22}
+
+\subsection{What happened today?}
+
+Did some refactoring and made minor changes to the language.
+Binary and unit constants now work as well.
+
+\section{2022-11-23}
+
+Wrote up a simple wrapper to execute code under qemu process
+emulation.
+I wrote a small launcher function:
+\begin{lstlisting}[language=Assembler]
+	.arm
+	.section ".text", "ax"
+	.global _start
+	.type _start, %function
+	.func _start, _start
+_start:
+	sub sp, #8
+.L1:
+	mov r7, #3 @ sys_read
+	mov r0, #0 @ stdin
+	mov r1, sp
+	mov r2, #8
+	swi #0
+	cmp r0, #8
+	bne .L2
+	ldr r0, [sp]
+	ldr r1, [sp, #4]
+	blx "gcd"
+	str r0, [sp]
+	mov r7, #4 @ sys_write
+	mov r0, #1 @ stdout
+	mov r1, sp
+	mov r2, #4
+	swi #0
+.L2:
+	add sp, #8
+	mov r0, #0
+	mov r7, #1 @ sys_exit
+	swi #0
+\end{lstlisting}
+
+and compiled a basic application using a simple Makefile:
+\begin{lstlisting}
+gcd: crt0.o gcd.o
+	env/bin/arm-none-eabi-ld $^ build/liblyn/liblyn.a -o gcd
+%.o: %.s
+	env/bin/arm-none-eabi-as $< -c -o $@
+gcd.s: examples/gcd.scm
+	build/lync/lync -o $@ $<
+\end{lstlisting}
+
+After a few minor code generation issues have been fixed I found the
+resulting executable to be functional.
+The corresponding program looks pretty good when disassembled:
+\begin{lstlisting}[language=Assembler, basicstyle=\footnotesize]
+
+gcd:     file format elf32-littlearm
+
+
+Disassembly of section .text:
+
+00008000 <_start>:
+    8000:	e24dd008 	sub	sp, sp, #8
+    8004:	e3a07003 	mov	r7, #3
+    8008:	e3a00000 	mov	r0, #0
+    800c:	e1a0100d 	mov	r1, sp
+    8010:	e3a02008 	mov	r2, #8
+    8014:	ef000000 	svc	0x00000000
+    8018:	e3500008 	cmp	r0, #8
+    801c:	1a000008 	bne	8044 <_start+0x44>
+    8020:	e59d0000 	ldr	r0, [sp]
+    8024:	e59d1004 	ldr	r1, [sp, #4]
+    8028:	fa000009 	blx	8054 <gcd>
+    802c:	e58d0000 	str	r0, [sp]
+    8030:	e3a07004 	mov	r7, #4
+    8034:	e3a00001 	mov	r0, #1
+    8038:	e1a0100d 	mov	r1, sp
+    803c:	e3a02004 	mov	r2, #4
+    8040:	ef000000 	svc	0x00000000
+    8044:	e28dd008 	add	sp, sp, #8
+    8048:	e3a00000 	mov	r0, #0
+    804c:	e3a07001 	mov	r7, #1
+    8050:	ef000000 	svc	0x00000000
+
+00008054 <gcd>:
+    8054:	b543      	push	{r0, r1, r6, lr}
+    8056:	b083      	sub	sp, #12
+    8058:	4812      	ldr	r0, [pc, #72]	; (80a4 <gcd+0x50>)
+    805a:	9002      	str	r0, [sp, #8]
+    805c:	f04f 0000 	mov.w	r0, #0
+    8060:	9001      	str	r0, [sp, #4]
+    8062:	9c02      	ldr	r4, [sp, #8]
+    8064:	9804      	ldr	r0, [sp, #16]
+    8066:	9901      	ldr	r1, [sp, #4]
+    8068:	f000 f81b 	bl	80a2 <gcd+0x4e>
+    806c:	9000      	str	r0, [sp, #0]
+    806e:	9800      	ldr	r0, [sp, #0]
+    8070:	4200      	tst	r0, r0
+    8072:	d004      	beq.n	807e <gcd+0x2a>
+    8074:	e7ff      	b.n	8076 <gcd+0x22>
+    8076:	b080      	sub	sp, #0
+    8078:	9803      	ldr	r0, [sp, #12]
+    807a:	b005      	add	sp, #20
+    807c:	bd40      	pop	{r6, pc}
+    807e:	b084      	sub	sp, #16
+    8080:	4809      	ldr	r0, [pc, #36]	; (80a8 <gcd+0x54>)
+    8082:	9003      	str	r0, [sp, #12]
+    8084:	4809      	ldr	r0, [pc, #36]	; (80ac <gcd+0x58>)
+    8086:	9002      	str	r0, [sp, #8]
+    8088:	9c02      	ldr	r4, [sp, #8]
+    808a:	9807      	ldr	r0, [sp, #28]
+    808c:	9908      	ldr	r1, [sp, #32]
+    808e:	f000 f808 	bl	80a2 <gcd+0x4e>
+    8092:	9001      	str	r0, [sp, #4]
+    8094:	980a      	ldr	r0, [sp, #40]	; 0x28
+    8096:	4686      	mov	lr, r0
+    8098:	9c03      	ldr	r4, [sp, #12]
+    809a:	9808      	ldr	r0, [sp, #32]
+    809c:	9901      	ldr	r1, [sp, #4]
+    809e:	b00b      	add	sp, #44	; 0x2c
+    80a0:	4720      	bx	r4
+    80a2:	4720      	bx	r4
+    80a4:	000080b1 	.word	0x000080b1
+    80a8:	00008055 	.word	0x00008055
+    80ac:	000080b9 	.word	0x000080b9
+
+000080b0 <=>:
+    80b0:	1a40      	subs	r0, r0, r1
+    80b2:	4243      	negs	r3, r0
+    80b4:	4158      	adcs	r0, r3
+    80b6:	4770      	bx	lr
+
+000080b8 <%>:
+    80b8:	0002      	movs	r2, r0
+    80ba:	2301      	movs	r3, #1
+    80bc:	4288      	cmp	r0, r1
+    80be:	d806      	bhi.n	80ce <%+0x16>
+    80c0:	e007      	b.n	80d2 <%+0x1a>
+    80c2:	0049      	lsls	r1, r1, #1
+    80c4:	005b      	lsls	r3, r3, #1
+    80c6:	4281      	cmp	r1, r0
+    80c8:	d20c      	bcs.n	80e4 <%+0x2c>
+    80ca:	2b00      	cmp	r3, #0
+    80cc:	d00a      	beq.n	80e4 <%+0x2c>
+    80ce:	2900      	cmp	r1, #0
+    80d0:	daf7      	bge.n	80c2 <%+0xa>
+    80d2:	4291      	cmp	r1, r2
+    80d4:	d800      	bhi.n	80d8 <%+0x20>
+    80d6:	1a52      	subs	r2, r2, r1
+    80d8:	085b      	lsrs	r3, r3, #1
+    80da:	0849      	lsrs	r1, r1, #1
+    80dc:	2b00      	cmp	r3, #0
+    80de:	d1f8      	bne.n	80d2 <%+0x1a>
+    80e0:	0010      	movs	r0, r2
+    80e2:	4770      	bx	lr
+    80e4:	2b00      	cmp	r3, #0
+    80e6:	d1f4      	bne.n	80d2 <%+0x1a>
+    80e8:	e7fb      	b.n	80e2 <%+0x2a>
+\end{lstlisting}
+
+A few things are noteworthy:
+\begin{itemize}
+\item The runtime library has indeed the nice property that only used
+  functions are actually linked.
+\item Not all instructions are Thumb1 yet. This is partially because
+  GNU as is configured to assemble for a CPU capable of Thumb2 and
+  therefore assembles some instructions as Thumb2 while they could be
+  encoded in Thumb1.
+\item A trampoline for function calls is needed as there is no Thumb1
+  instruction that does ``call with link'' and ``call to address in
+  register'' in one go.
+\item Note that we are using the builtin GNU ld linker script for this
+  application.
+  This is a nice property that should be kept.
+\item \texttt{objdump} would like to see some EABI tags to give info
+  like it would for a GCC program.
+  Overall it seems to be somewhat insecure about what it is looking
+  at.
+  For now this is of lesser importance however.
+\end{itemize}
+
 \end{document}
