@@ -48,18 +48,6 @@ bool unify(type *lhs, type *rhs) {
       lhs->content, rhs->content);
 }
 
-type *unwrap_typevars(type *t) {
-  while (true) {
-    if (!std::holds_alternative<type_variable>(t->content))
-      break;
-    auto *const target = std::get<type_variable>(t->content).target;
-    if (!target)
-      break;
-    t = target;
-  }
-  return t;
-}
-
 class typecheck_t {
 public:
   explicit typecheck_t(std::pmr::monotonic_buffer_resource &alloc)
