@@ -84,6 +84,8 @@ int main(int argc, char **argv) try {
       }
       if (!exec_frontend(input, input_name, cc))
         code = 1;
+      cc.expr_alloc.release();
+      cc.type_alloc.release();
     }
     break;
   case dump_ir:
