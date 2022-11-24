@@ -134,10 +134,10 @@ public:
       return 0;
     const int ret_id = next_id++;
     current_def->blocks[then_block].content.emplace_back(
-        anf_assoc{then_block, ret_id});
+        anf_assoc{then_id, ret_id});
     current_def->blocks[then_block].content.emplace_back(anf_jump{cont_block});
     current_def->blocks[else_block].content.emplace_back(
-        anf_assoc{then_block, ret_id});
+        anf_assoc{else_id, ret_id});
     current_def->blocks[else_block].content.emplace_back(anf_jump{cont_block});
     current_block = &current_def->blocks[cont_block];
     return ret_id;
