@@ -453,4 +453,20 @@ Anyway, after forcing ``armv5t'' as the target architecture of the
 assembler and fixing this issue the compiler emits pure and nice
 Thumb1 instructions.
 
+\section{2022-11-24}
+
+\subsection{What happened today}
+
+Today I did a major rewrite of the parser and the memory management of
+the compiler.
+The parser is now a recursively descent parser, lacking all kinds of
+error reporting.
+It gets along without exceptions though.
+In addition there are dedicated allocators for different memory chunks
+now.
+All in all the changes of today will help in porting the compiler to
+embedded systems.
+Also, the size of the resulting binary on AMD64 shrinked from 200kB to
+100kB, slicing the size straight in half.
+
 \end{document}
