@@ -22,20 +22,20 @@ struct token {
     number,
   };
 
-  type t;
+  type t = type::error;
   union {
     int i;
     std::string_view s;
   } value;
-  source_location sloc;
+  source_location sloc = {};
 };
 
 struct parse_context {
   FILE *file;
   source_location sloc;
   compilation_context &cc;
-  token cur_tok;
-  std::vector<toplevel_expr> defines;
+  token cur_tok = {};
+  std::vector<toplevel_expr> defines = {};
 };
 
 void lex(parse_context &ctx) {
@@ -226,21 +226,22 @@ expr *parse_expr(parse_context &ctx) {
       return parse_let(ctx, sloc);
     case token::type::if_:
       return parse_if(ctx, sloc);
-    }
-    apply_expr res;
-    res.func = parse_expr(ctx);
-    if (!res.func)
-      return nullptr;
-    std::vector<expr *> args;
-    while (ctx.cur_tok.t != token::type::rpar) {
-      expr *arg_expr = parse_expr(ctx);
-      if (!arg_expr)
+    default:
+      apply_expr res;
+      res.func = parse_expr(ctx);
+      if (!res.func)
         return nullptr;
-      args.push_back(arg_expr);
+      std::vector<expr *> args;
+      while (ctx.cur_tok.t != token::type::rpar) {
+        expr *arg_expr = parse_expr(ctx);
+        if (!arg_expr)
+          return nullptr;
+        args.push_back(arg_expr);
+      }
+      res.args = spanify(ctx.cc.expr_alloc, args);
+      lex(ctx);
+      return make_expr(ctx.cc, std::move(res), sloc);
     }
-    res.args = spanify(ctx.cc.expr_alloc, args);
-    lex(ctx);
-    return make_expr(ctx.cc, std::move(res), sloc);
   }
   case token::type::error:
   case token::type::eof:
@@ -253,6 +254,7 @@ expr *parse_expr(parse_context &ctx) {
   case token::type::arrow:
     return nullptr;
   }
+  unreachable();
 }
 
 bool parse_toplevel(parse_context &ctx) {

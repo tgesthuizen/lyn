@@ -69,7 +69,7 @@ using all_exprs = type_list<constant_expr, variable_expr, apply_expr,
 struct expr {
   derive_pack_t<std::variant, all_exprs> content;
   source_location sloc;
-  struct type *type;
+  struct type *type = nullptr;
 };
 
 struct toplevel_expr {
