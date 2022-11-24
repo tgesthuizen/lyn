@@ -250,8 +250,6 @@ expr *parse_expr(parse_context &ctx) {
   case token::type::lambda:
   case token::type::if_:
   case token::type::define:
-  case token::type::declare:
-  case token::type::arrow:
     return nullptr;
   }
   unreachable();

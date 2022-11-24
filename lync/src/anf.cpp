@@ -165,7 +165,7 @@ genanf(std::vector<toplevel_expr> &exprs, const symbol_table &stable) {
   for (auto &&expr : exprs) {
     if (!std::holds_alternative<lambda_expr>(expr.value->content)) {
       fprintf(stderr, "Will not generate anything for %.*s!\n",
-              std::size(expr.name), expr.name.data());
+              static_cast<int>(std::size(expr.name)), expr.name.data());
       continue;
     }
     gen.push_func(expr.name, &std::get<lambda_expr>(expr.value->content));

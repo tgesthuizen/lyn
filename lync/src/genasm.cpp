@@ -16,14 +16,14 @@ void genasm(anf_context &ctx, FILE *out) {
   int label_offset = 1;
   for (auto &&def : ctx.defs) {
     if (def.global)
-      fprintf(out, "\t.global \"%.*s\"\n", std::size(def.name),
-              def.name.data());
+      fprintf(out, "\t.global \"%.*s\"\n",
+              static_cast<int>(std::size(def.name)), def.name.data());
     fprintf(out,
             "\t.type \"%.*s\", %%function\n"
             "\t.thumb_func\n"
             "\"%.*s\":\n",
-            std::size(def.name), def.name.data(), std::size(def.name),
-            def.name.data());
+            static_cast<int>(std::size(def.name)), def.name.data(),
+            static_cast<int>(std::size(def.name)), def.name.data());
 
     std::unordered_map<int, int> local_to_stack_slot;
     std::unordered_map<std::size_t, int> used_stack_slots;
@@ -75,7 +75,8 @@ void genasm(anf_context &ctx, FILE *out) {
                       std::size(val.args) - i - 1;
                 }
                 fprintf(out, "\tpush {");
-                for (int i = 0; i < std::size(val.args); ++i) {
+                for (int i = 0;
+                     static_cast<std::size_t>(i) < std::size(val.args); ++i) {
                   fprintf(out, "r%d, ", i);
                 }
                 parent_local_count = std::size(val.args);
@@ -91,7 +92,7 @@ void genasm(anf_context &ctx, FILE *out) {
                 fprintf(out,
                         "\tldr r0, =\"%.*s\"\n"
                         "\tstr r0, [sp, #%d]\n",
-                        std::size(val.name), val.name.data(),
+                        static_cast<int>(std::size(val.name)), val.name.data(),
                         sp_offset_for_local(val.id));
               }
               if constexpr (std::is_same_v<val_t, anf_constant>) {
@@ -162,7 +163,7 @@ void genasm(anf_context &ctx, FILE *out) {
                         "\tldr r0, \"%.*s\"\n"
                         "\tldr r1, [sp, #%d]\n"
                         "\tstr r1, r0\n",
-                        std::size(val.name), val.name.data(),
+                        static_cast<int>(std::size(val.name)), val.name.data(),
                         sp_offset_for_local(val.id));
               }
             },
@@ -172,8 +173,8 @@ void genasm(anf_context &ctx, FILE *out) {
     fprintf(out,
             "\t.pool\n"
             "\t.size \"%.*s\", .-\"%.*s\"\n",
-            std::size(def.name), def.name.data(), std::size(def.name),
-            def.name.data());
+            static_cast<int>(std::size(def.name)), def.name.data(),
+            static_cast<int>(std::size(def.name)), def.name.data());
     label_offset += std::size(def.blocks);
   }
 }
