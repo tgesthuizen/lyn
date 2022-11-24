@@ -3,7 +3,7 @@
 
 #include "meta.h"
 
-#include <string>
+#include <string_view>
 #include <variant>
 #include <vector>
 
@@ -18,7 +18,7 @@ struct anf_receive {
 struct anf_adjust_stack {};
 
 struct anf_global {
-  std::string name;
+  std::string_view name;
   int id;
 };
 
@@ -54,7 +54,7 @@ struct anf_jump {
 };
 
 struct anf_global_assign {
-  std::string name;
+  std::string_view name;
   int id;
 };
 
@@ -68,7 +68,7 @@ struct basic_block {
 };
 
 struct anf_def {
-  std::string name;
+  std::string_view name;
   std::vector<basic_block> blocks;
   bool global;
 };

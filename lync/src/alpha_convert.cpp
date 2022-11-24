@@ -18,9 +18,9 @@ void alpha_convert_expr(symbol_table &table, lyn::expr *expr) {
           expr.id = table[expr.name];
         }
         if constexpr (std::is_same_v<expr_t, apply_expr>) {
-          alpha_convert_expr(table, expr.func.get());
+          alpha_convert_expr(table, expr.func);
           for (auto &&arg : expr.args) {
-            alpha_convert_expr(table, arg.get());
+            alpha_convert_expr(table, arg);
           }
         }
         if constexpr (std::is_same_v<expr_t, lambda_expr>) {
@@ -28,31 +28,26 @@ void alpha_convert_expr(symbol_table &table, lyn::expr *expr) {
           for (auto &&param : expr.params) {
             param.id = table.register_local(param.name, current_scope);
           }
-          alpha_convert_expr(table, expr.body.get());
+          alpha_convert_expr(table, expr.body);
           table.pop_scope(current_scope);
         }
         if constexpr (std::is_same_v<expr_t, let_expr>) {
           for (auto &&binding : expr.bindings) {
-            alpha_convert_expr(table, binding.body.get());
+            alpha_convert_expr(table, binding.body);
           }
-	  scope current_scope;
+          scope current_scope;
           for (auto &&binding : expr.bindings) {
-	    binding.id = table.register_local(binding.name, current_scope);
+            binding.id = table.register_local(binding.name, current_scope);
           }
-	  for(auto &&ptr: expr.body) {
-	    alpha_convert_expr(table, ptr.get());
-	  }
-	  table.pop_scope(current_scope);
-        }
-        if constexpr (std::is_same_v<expr_t, begin_expr>) {
-          for (auto &&subexpr : expr.exprs) {
-            alpha_convert_expr(table, subexpr.get());
+          for (auto &&ptr : expr.body) {
+            alpha_convert_expr(table, ptr);
           }
+          table.pop_scope(current_scope);
         }
         if constexpr (std::is_same_v<expr_t, if_expr>) {
-          alpha_convert_expr(table, expr.cond.get());
-          alpha_convert_expr(table, expr.then.get());
-          alpha_convert_expr(table, expr.els.get());
+          alpha_convert_expr(table, expr.cond);
+          alpha_convert_expr(table, expr.then);
+          alpha_convert_expr(table, expr.els);
         }
       },
       expr->content);
@@ -71,7 +66,7 @@ symbol_table alpha_convert(std::vector<toplevel_expr> &exprs) {
   }
   table.start_local_registering();
   for (auto &&decl : exprs) {
-    alpha_convert_expr(table, decl.value.get());
+    alpha_convert_expr(table, decl.value);
   }
   return table;
 }

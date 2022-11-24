@@ -90,15 +90,7 @@ type *typecheck_t::visit(expr &target) {
   const auto typecheck_value = [this](auto &&expr) {
     using expr_t = std::decay_t<decltype(expr)>;
     if constexpr (std::is_same_v<expr_t, constant_expr>) {
-      switch (expr.type) {
-      case constant_type::Int:
-        return int_t;
-      case constant_type::Bool:
-        return bool_t;
-      case constant_type::Unit:
-        return unit_t;
-      }
-      throw std::invalid_argument{"Reached beyond end of switch"};
+      return int_t;
     }
     if constexpr (std::is_same_v<expr_t, variable_expr>) {
       return id_to_type.at(expr.id);
@@ -132,19 +124,9 @@ type *typecheck_t::visit(expr &target) {
       if (std::empty(expr.body)) {
         return unit_t;
       }
-      std::for_each(
-          std::begin(expr.body), std::end(expr.body) - 1,
-          [this](const std::unique_ptr<lyn::expr> &ptr) { visit(*ptr); });
+      std::for_each(std::begin(expr.body), std::end(expr.body) - 1,
+                    [this](lyn::expr *ptr) { visit(*ptr); });
       return visit(*expr.body.back());
-    }
-    if constexpr (std::is_same_v<expr_t, begin_expr>) {
-      if (std::empty(expr.exprs)) {
-        return unit_t;
-      }
-      std::for_each(
-          std::begin(expr.exprs), std::end(expr.exprs) - 1,
-          [this](const std::unique_ptr<lyn::expr> &ptr) { visit(*ptr); });
-      return visit(*expr.exprs.back());
     }
     if constexpr (std::is_same_v<expr_t, if_expr>) {
       auto *const cond_t = visit(*expr.cond);

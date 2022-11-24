@@ -21,7 +21,7 @@ void print_anf(anf_context &ctx, FILE *out) {
   for (auto &&def : ctx.defs) {
     if (def.global)
       fputs("<global> ", out);
-    fprintf(out, "%s:\n", def.name.c_str());
+    fprintf(out, "%.*s:\n", std::size(def.name), def.name.data());
     for (std::size_t i = 0; i < std::size(def.blocks); ++i) {
       auto &&block = def.blocks[i];
       fprintf(out, ".L%d:\n", static_cast<int>(i));
@@ -41,8 +41,8 @@ void print_anf(anf_context &ctx, FILE *out) {
                 fputs("adjust_stack\n", out);
               }
               if constexpr (std::is_same_v<val_t, anf_global>) {
-                fprintf(out, "\t%d <- global \"%s\"\n", val.id,
-                        val.name.c_str());
+                fprintf(out, "\t%d <- global \"%.*s\"\n", val.id,
+                        std::size(val.name), val.name.data());
               }
               if constexpr (std::is_same_v<val_t, anf_constant>) {
                 fprintf(out, "\t%d <- const %d\n", val.id, val.value);
@@ -66,8 +66,8 @@ void print_anf(anf_context &ctx, FILE *out) {
                         val.else_block);
               }
               if constexpr (std::is_same_v<val_t, anf_global_assign>) {
-                fprintf(out, "\tassign_global \"%s\" <- %d\n", val.name.c_str(),
-                        val.id);
+                fprintf(out, "\tassign_global \"%.*s\" <- %d\n",
+                        std::size(val.name), val.name.data(), val.id);
               }
               if constexpr (std::is_same_v<val_t, anf_return>) {
                 fprintf(out, "\tret %d\n", val.value);

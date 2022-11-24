@@ -11,7 +11,7 @@ namespace lyn {
 namespace {
 
 struct fun_info {
-  std::string name;
+  std::string_view name;
   lambda_expr &expr;
   bool global;
 };
@@ -21,8 +21,8 @@ public:
   explicit anf_generator(const symbol_table &stable)
       : stable{stable}, next_id{stable.get_next_id()} {}
 
-  void push_func(std::string name, lambda_expr *ptr) {
-    funcs_to_generate.push_back(fun_info{std::move(name), *ptr, true});
+  void push_func(std::string_view name, lambda_expr *ptr) {
+    funcs_to_generate.push_back(fun_info{name, *ptr, true});
   }
 
   void run() {
@@ -48,20 +48,8 @@ public:
 
   int operator()(constant_expr &expr) {
     const int constant_id = next_id++;
-    switch (expr.type) {
-    case constant_type::Int:
-      current_block->content.emplace_back(
-          anf_expr{anf_constant{expr.value.i, constant_id}});
-      break;
-    case constant_type::Bool:
-      current_block->content.emplace_back(
-          anf_expr{anf_constant{static_cast<int>(expr.value.b), constant_id}});
-      break;
-    case constant_type::Unit:
-      current_block->content.emplace_back(
-          anf_expr{anf_constant{0, constant_id}});
-      break;
-    }
+    current_block->content.emplace_back(
+        anf_expr{anf_constant{expr.value, constant_id}});
     if (tail_pos)
       current_block->content.emplace_back(anf_expr{anf_return{constant_id}});
     return constant_id;
@@ -83,11 +71,9 @@ public:
     const int fid = std::visit(*this, expr.func->content);
     std::vector<int> args;
     args.reserve(std::size(expr.args));
-    std::transform(std::begin(expr.args), std::end(expr.args),
-                   std::back_inserter(args),
-                   [this](const std::unique_ptr<lyn::expr> &arg) {
-                     return std::visit(*this, arg->content);
-                   });
+    std::transform(
+        std::begin(expr.args), std::end(expr.args), std::back_inserter(args),
+        [this](lyn::expr *arg) { return std::visit(*this, arg->content); });
     tail_pos = tail_pos_saved;
     int call_id = 0;
     if (!tail_pos)
@@ -116,18 +102,8 @@ public:
       return 0;
     }
     std::for_each(std::begin(expr.body), std::end(expr.body) - 1,
-                  [this](const std::unique_ptr<lyn::expr> &ptr) {
-                    std::visit(*this, ptr->content);
-                  });
+                  [this](lyn::expr *ptr) { std::visit(*this, ptr->content); });
     return std::visit(*this, expr.body.back()->content);
-  }
-
-  int operator()(begin_expr &expr) {
-    std::for_each(std::begin(expr.exprs), std::end(expr.exprs) - 1,
-                  [this](const std::unique_ptr<lyn::expr> &ptr) {
-                    return std::visit(*this, ptr->content);
-                  });
-    return std::visit(*this, expr.exprs.back()->content);
   }
 
   int operator()(if_expr &expr) {
@@ -188,8 +164,8 @@ genanf(std::vector<toplevel_expr> &exprs, const symbol_table &stable) {
   anf_generator gen(stable);
   for (auto &&expr : exprs) {
     if (!std::holds_alternative<lambda_expr>(expr.value->content)) {
-      fprintf(stderr, "Will not generate anything for %s!\n",
-              expr.name.c_str());
+      fprintf(stderr, "Will not generate anything for %.*s!\n",
+              std::size(expr.name), expr.name.data());
       continue;
     }
     gen.push_func(expr.name, &std::get<lambda_expr>(expr.value->content));

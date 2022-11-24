@@ -1,15 +1,22 @@
 #ifndef LYN_EXPR_H
 #define LYN_EXPR_H
 
+#include "meta.h"
+#include "span.h"
 #include <cstddef>
 #include <memory>
 #include <string>
+#include <string_view>
 #include <variant>
 #include <vector>
 
-#include "meta.h"
-
 namespace lyn {
+
+struct source_location {
+  std::string_view file_name;
+  int line;
+  int col;
+};
 
 struct expr;
 struct type;
@@ -21,66 +28,69 @@ enum class constant_type {
 };
 
 struct constant_expr {
-  constant_type type;
-  union {
-    int i;
-    bool b;
-  } value;
+  int value;
 };
 
 struct variable_expr {
-  std::string name;
+  std::string_view name;
   int id = 0;
 };
 
 struct apply_expr {
-  std::unique_ptr<expr> func;
-  std::vector<std::unique_ptr<expr>> args;
+  expr *func;
+  span<expr *> args;
 };
 
 struct lambda_expr {
-  std::vector<variable_expr> params;
-  std::unique_ptr<expr> body;
+  span<variable_expr> params;
+  expr *body;
 };
 
 struct let_binding {
-  std::string name;
+  std::string_view name;
   int id;
-  std::unique_ptr<expr> body;
+  expr *body;
 };
 
 struct let_expr {
-  std::vector<let_binding> bindings;
-  std::vector<std::unique_ptr<expr>> body;
-};
-
-struct begin_expr {
-  std::vector<std::unique_ptr<expr>> exprs;
+  span<let_binding> bindings;
+  span<expr *> body;
 };
 
 struct if_expr {
-  std::unique_ptr<expr> cond;
-  std::unique_ptr<expr> then;
-  std::unique_ptr<expr> els;
+  expr *cond;
+  expr *then;
+  expr *els;
 };
 
 using all_exprs = type_list<constant_expr, variable_expr, apply_expr,
-                            lambda_expr, let_expr, begin_expr, if_expr>;
+                            lambda_expr, let_expr, if_expr>;
 
 struct expr {
   derive_pack_t<std::variant, all_exprs> content;
-  int line;
-  int col;
+  source_location sloc;
   struct type *type;
+};
 
-  expr(derive_pack_t<std::variant, all_exprs> content, int line, int col)
-      : content{std::move(content)}, line{line}, col{col}, type{nullptr} {}
+struct type_expr;
+
+struct int_type_expr {};
+struct bool_type_expr {};
+struct unit_type_expr {};
+struct func_type_expr {
+  std::vector<type_expr> types;
+};
+using all_type_exprs =
+    type_list<int_type_expr, bool_type_expr, unit_type_expr, func_type_expr>;
+
+struct type_expr {
+  derive_pack_t<std::variant, all_type_exprs> content;
 };
 
 struct toplevel_expr {
-  std::string name;
+  std::string_view name;
   int id;
-  std::unique_ptr<expr> value;
+  expr *value;
 };
 
 } // namespace lyn

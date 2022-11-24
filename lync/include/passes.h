@@ -1,18 +1,30 @@
 #ifndef LYN_PASSES_H
 #define LYN_PASSES_H
 
+#include "string_table.h"
+#include "symbol_table.h"
 #include <cstdio>
 #include <memory_resource>
+#include <optional>
 #include <vector>
 
 namespace lyn {
+
+struct compilation_context {
+  string_table stbl;
+  symbol_table symtab;
+  std::pmr::monotonic_buffer_resource expr_alloc;
+  std::pmr::monotonic_buffer_resource type_alloc;
+  std::pmr::monotonic_buffer_resource anf_alloc;
+};
 
 struct toplevel_expr;
 struct type;
 struct anf_context;
 struct symbol_table;
 
-std::vector<toplevel_expr> parse(FILE *input);
+std::optional<std::vector<toplevel_expr>>
+parse(FILE *f, std::string_view file_name, compilation_context &cc);
 symbol_table alpha_convert(std::vector<toplevel_expr> &exprs);
 void typecheck(std::vector<toplevel_expr> &exprs, const symbol_table &stable,
                std::pmr::monotonic_buffer_resource &alloc);

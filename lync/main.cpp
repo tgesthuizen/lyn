@@ -1,5 +1,6 @@
 #include "expr.h"
 #include "passes.h"
+#include "string_table.h"
 #include "symbol_table.h"
 #include <cstdio>
 #include <stdexcept>
@@ -14,12 +15,15 @@ const char help_text[] =
     " -s\tSimply performs a syntax check and exits\n"
     " -h\tPrints this message\n";
 
-std::unique_ptr<lyn::anf_context, lyn::delete_anf> exec_frontend(FILE *input) {
-  auto decls = lyn::parse(input);
-  auto table = lyn::alpha_convert(decls);
-  std::pmr::monotonic_buffer_resource type_pool;
-  lyn::typecheck(decls, table, type_pool);
-  return lyn::genanf(decls, table);
+std::unique_ptr<lyn::anf_context, lyn::delete_anf>
+exec_frontend(FILE *input, std::string_view file_name,
+              lyn::compilation_context &cc) {
+  auto decls = lyn::parse(input, file_name, cc);
+  if (!decls)
+    return nullptr;
+  auto table = lyn::alpha_convert(*decls);
+  lyn::typecheck(*decls, table, cc.type_alloc);
+  return lyn::genanf(*decls, table);
 }
 
 } // namespace
@@ -32,6 +36,7 @@ int main(int argc, char **argv) try {
     full_compile,
   } mode = full_compile;
   int code = 0;
+  std::string_view input_name;
   FILE *input = nullptr;
   FILE *target = stdout;
   int ret;
@@ -66,16 +71,19 @@ int main(int argc, char **argv) try {
       break;
     }
   }
+  lyn::compilation_context cc;
   switch (mode) {
   case syntax_only:
     for (int i = optind; i < argc; ++i) {
+      input_name = argv[i];
       input = fopen(argv[i], "r");
       if (!input) {
         fprintf(stderr, "error: Could not open input file \"%s\"\n", argv[i]);
         code = 1;
         continue;
       }
-      exec_frontend(input);
+      if (!exec_frontend(input, input_name, cc))
+        code = 1;
     }
     break;
   case dump_ir:
@@ -86,12 +94,18 @@ int main(int argc, char **argv) try {
     }
     if (optind < argc) {
       input = fopen(argv[optind], "r");
+      input_name = argv[optind];
       if (!input) {
         fprintf(stderr, "error: Could not open input file \"%s\"\n",
                 argv[optind]);
         code = 1;
       } else {
-        lyn::print_anf(*exec_frontend(input), target);
+        const auto anf_ctx = exec_frontend(input, input_name, cc);
+        if (!anf_ctx) {
+          code = 1;
+          break;
+        }
+        lyn::print_anf(*anf_ctx, target);
       }
     }
     break;
@@ -103,12 +117,18 @@ int main(int argc, char **argv) try {
     }
     if (optind < argc) {
       input = fopen(argv[optind], "r");
+      input_name = argv[optind];
       if (!input) {
         fprintf(stderr, "error: Could not open input file \"%s\"\n",
                 argv[optind]);
         code = 1;
       } else {
-        lyn::genasm(*exec_frontend(input), target);
+        const auto anf_ctx = exec_frontend(input, input_name, cc);
+        if (!anf_ctx) {
+          code = 1;
+          break;
+        }
+        lyn::genasm(*anf_ctx, target);
       }
     }
     break;

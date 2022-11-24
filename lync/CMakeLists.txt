@@ -2,17 +2,7 @@ cmake_minimum_required(VERSION 3.10)
 
 project(lyn CXX)
 
-find_package(BISON REQUIRED)
-
-BISON_TARGET(
-  parser
-  src/parser.yy
-  ${CMAKE_CURRENT_BINARY_DIR}/parser/parser.cpp
-  DEFINES_FILE ${CMAKE_CURRENT_BINARY_DIR}/parser/parser.h
-)
-
 add_library(compiler STATIC
-  ${BISON_parser_OUTPUTS}
   src/alpha_convert.cpp
   src/anf.cpp
   src/genasm.cpp
