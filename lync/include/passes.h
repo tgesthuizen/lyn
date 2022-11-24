@@ -15,7 +15,6 @@ struct compilation_context {
   symbol_table symtab;
   std::pmr::monotonic_buffer_resource expr_alloc;
   std::pmr::monotonic_buffer_resource type_alloc;
-  std::pmr::monotonic_buffer_resource anf_alloc;
 };
 
 struct toplevel_expr;
