@@ -86,9 +86,11 @@ type *typecheck_t::visit(expr &target) {
     if constexpr (std::is_same_v<expr_t, apply_expr>) {
       auto *const ftype = visit(*expr.func);
       function_type ft;
+      std::vector<type *> params;
       for (auto &&arg : expr.args) {
-        ft.params.push_back(visit(*arg));
+        params.push_back(visit(*arg));
       }
+      ft.params = spanify(alloc, params);
       type *const result = new (alloc_type()) type{type_variable{}};
       ft.result = result;
       if (!unify(new (alloc_type()) type{std::move(ft)}, ftype))
@@ -103,7 +105,7 @@ type *typecheck_t::visit(expr &target) {
         args.push_back(arg);
       }
       auto *const ret = visit(*expr.body);
-      return new (alloc_type()) type{function_type{std::move(args), ret}};
+      return new (alloc_type()) type{function_type{spanify(alloc, args), ret}};
     }
     if constexpr (std::is_same_v<expr_t, let_expr>) {
       for (auto &&binding : expr.bindings) {
@@ -133,13 +135,22 @@ type *typecheck_t::visit(expr &target) {
 }
 
 void typecheck_t::setup_primitive_types(const symbol_table &stable) {
-  type *bi_int = new (alloc_type()) type{function_type{{int_t, int_t}, int_t}};
-  type *uni_int = new (alloc_type()) type{function_type{{int_t}, int_t}};
-  type *comp_int =
-      new (alloc_type()) type{function_type{{int_t, int_t}, bool_t}};
-  type *bi_bool =
-      new (alloc_type()) type{function_type{{bool_t, bool_t}, bool_t}};
-  type *uni_bool = new (alloc_type()) type{function_type{{bool_t}, bool_t}};
+  // TODO: Is there really no way to create a std::initializer list for a
+  // function template call but to bind the brace init list to an auto variable?
+  auto bi_int_args = {int_t, int_t};
+  type *bi_int = new (alloc_type())
+      type{function_type{spanify(alloc, bi_int_args), int_t}};
+  auto uni_int_args = {int_t};
+  type *uni_int = new (alloc_type())
+      type{function_type{spanify(alloc, uni_int_args), int_t}};
+  type *comp_int = new (alloc_type())
+      type{function_type{spanify(alloc, bi_int_args), bool_t}};
+  auto bi_bool_args = {bool_t, bool_t};
+  type *bi_bool = new (alloc_type())
+      type{function_type{spanify(alloc, bi_bool_args), bool_t}};
+  auto uni_bool_args = {bool_t};
+  type *uni_bool = new (alloc_type())
+      type{function_type{spanify(alloc, uni_bool_args), bool_t}};
 
   for (auto &&primitive : primitives) {
     id_to_type[stable[primitive.name]] = [&] {
@@ -162,7 +173,7 @@ void typecheck_t::setup_primitive_types(const symbol_table &stable) {
       throw std::invalid_argument{"Invalid enum value"};
     }();
   }
-}
+} // namespace
 
 } // namespace
 

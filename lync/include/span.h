@@ -2,11 +2,17 @@
 #define LYN_SPAN_H
 
 #include <cstddef>
+#include <cstring>
+#include <type_traits>
+#include <utility>
+#include <vector>
 
 namespace lyn {
 
 template <class T> class span {
 public:
+  using value_type = T;
+
   span() = default;
   span(const span &other) = default;
   span(span &&other) = default;
@@ -29,6 +35,17 @@ private:
   T *m_data = nullptr;
   std::size_t m_size = 0u;
 };
+
+template <class Alloc, class Container>
+span<typename Container::value_type> spanify(Alloc &alloc,
+                                             const Container &vec) {
+  using T = typename Container::value_type;
+  static_assert(std::is_trivially_destructible<T>::value);
+  return {static_cast<T *>(std::memcpy(
+              alloc.allocate(sizeof(T) * std::size(vec), alignof(T)),
+              std::data(vec), sizeof(T) * std::size(vec))),
+          std::size(vec)};
+}
 
 } // namespace lyn
 

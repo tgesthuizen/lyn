@@ -122,16 +122,6 @@ expr *make_expr(compilation_context &cc, Args &&...args) {
       expr{std::forward<Args>(args)...};
 }
 
-template <class T>
-span<T> spanify(compilation_context &cc, const std::vector<T> &vec) {
-  static_assert(std::is_trivially_destructible<T>::value);
-  return span(
-      static_cast<T *>(std::memcpy(
-          cc.expr_alloc.allocate(sizeof(T) * std::size(vec), alignof(T)),
-          vec.data(), sizeof(T) * std::size(vec))),
-      std::size(vec));
-}
-
 expr *parse_expr(parse_context &ctx);
 
 expr *parse_lambda(parse_context &ctx, const source_location &sloc) {
@@ -147,12 +137,7 @@ expr *parse_lambda(parse_context &ctx, const source_location &sloc) {
     args.push_back(variable_expr{ctx.cur_tok.value.s});
     lex(ctx);
   }
-  res.params = span{
-      static_cast<variable_expr *>(std::memcpy(
-          ctx.cc.expr_alloc.allocate(sizeof(variable_expr) * std::size(args),
-                                     alignof(variable_expr)),
-          args.data(), sizeof(variable_expr) * std::size(args))),
-      std::size(args)};
+  res.params = spanify(ctx.cc.expr_alloc, args);
   lex(ctx);
   res.body = parse_expr(ctx);
   if (!res.body)
@@ -187,14 +172,14 @@ expr *parse_let(parse_context &ctx, const source_location &sloc) {
     lex(ctx);
     bindings.push_back(std::move(b));
   }
-  res.bindings = spanify(ctx.cc, bindings);
+  res.bindings = spanify(ctx.cc.expr_alloc, bindings);
   std::vector<expr *> exprs;
   while (ctx.cur_tok.t != token::type::rpar) {
     exprs.push_back(parse_expr(ctx));
     if (!exprs.back())
       return nullptr;
   }
-  res.body = spanify(ctx.cc, exprs);
+  res.body = spanify(ctx.cc.expr_alloc, exprs);
   lex(ctx);
   return make_expr(ctx.cc, std::move(res), sloc);
 }
@@ -241,31 +226,37 @@ expr *parse_expr(parse_context &ctx) {
       return parse_let(ctx, sloc);
     case token::type::if_:
       return parse_if(ctx, sloc);
-    default: {
-      apply_expr res;
-      res.func = parse_expr(ctx);
-      if (!res.func)
+    }
+    apply_expr res;
+    res.func = parse_expr(ctx);
+    if (!res.func)
+      return nullptr;
+    std::vector<expr *> args;
+    while (ctx.cur_tok.t != token::type::rpar) {
+      expr *arg_expr = parse_expr(ctx);
+      if (!arg_expr)
         return nullptr;
-      std::vector<expr *> args;
-      while (ctx.cur_tok.t != token::type::rpar) {
-        expr *arg_expr = parse_expr(ctx);
-        if (!arg_expr)
-          return nullptr;
-        args.push_back(arg_expr);
-      }
-      res.args = spanify<expr *>(ctx.cc, args);
-      lex(ctx);
-      return make_expr(ctx.cc, std::move(res), sloc);
+      args.push_back(arg_expr);
     }
-    }
+    res.args = spanify(ctx.cc.expr_alloc, args);
+    lex(ctx);
+    return make_expr(ctx.cc, std::move(res), sloc);
   }
+  case token::type::error:
+  case token::type::eof:
+  case token::type::rpar:
+  case token::type::let:
+  case token::type::lambda:
+  case token::type::if_:
+  case token::type::define:
+  case token::type::declare:
+  case token::type::arrow:
+    return nullptr;
   }
-  return nullptr;
 }
 
 bool parse_toplevel(parse_context &ctx) {
   while (ctx.cur_tok.t == token::type::lpar) {
-    const auto sloc = ctx.cur_tok.sloc;
     lex(ctx);
     if (ctx.cur_tok.t != token::type::define) {
       return false;

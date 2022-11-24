@@ -1,10 +1,10 @@
 #ifndef LYN_TYPES_H
 #define LYN_TYPES_H
 
+#include "meta.h"
+#include "span.h"
 #include <variant>
 #include <vector>
-
-#include "meta.h"
 
 namespace lyn {
 
@@ -15,7 +15,7 @@ struct bool_type {};
 struct unit_type {};
 
 struct function_type {
-  std::vector<type *> params;
+  span<type *> params;
   type *result;
 };
 
