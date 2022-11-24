@@ -21,8 +21,9 @@ public:
   T *begin() const { return m_data; }
   T *end() const { return m_data + m_size; }
 
-  T &front() { return *begin(); }
-  T &back() { return *(end() - 1); }
+  T &front() const { return *begin(); }
+  T &back() const { return *(end() - 1); }
+  T &operator[](std::size_t idx) const { return m_data[idx]; }
 
 private:
   T *m_data = nullptr;
