@@ -134,7 +134,10 @@ int main(int argc, char **argv) try {
       }
     }
     break;
+  case stop:
+    break;
   }
+  return code;
 } catch (const std::exception &e) {
   fprintf(stderr, "%s\n", e.what());
   return -1;
