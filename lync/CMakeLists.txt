@@ -6,7 +6,7 @@ add_library(compiler STATIC
   src/alpha_convert.cpp
   src/anf.cpp
   src/genasm.cpp
-  src/lexer.cpp
+  src/parser.cpp
   src/primitives.cpp
   src/print-anf.cpp
   src/typecheck.cpp
