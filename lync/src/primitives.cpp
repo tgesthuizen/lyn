@@ -28,4 +28,5 @@ const primitive_info primitives[number_of_primitives] = {
     {"false", primitive_type::bool_},
     {"<>", primitive_type::unit},
 };
+
 }
