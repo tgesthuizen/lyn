@@ -20,6 +20,7 @@ struct token {
     if_,
     define,
     declare,
+    include,
     identifier,
     number,
   };
@@ -32,10 +33,16 @@ struct token {
   source_location sloc = {};
 };
 
+struct include_return {
+  FILE *file;
+  source_location sloc;
+};
+
 struct parse_context {
   FILE *file;
   source_location sloc;
   compilation_context &cc;
+  std::vector<include_return> returns = {};
   token cur_tok = {};
   std::vector<toplevel_expr> defines = {};
 };
@@ -96,6 +103,10 @@ void lex(parse_context &ctx) {
       ctx.cur_tok.t = token::type::declare;
       return;
     }
+    if (result == "include") {
+      ctx.cur_tok.t = token::type::include;
+      return;
+    }
     ctx.cur_tok.t = token::type::identifier;
     ctx.cur_tok.value.s = ctx.cc.stbl.store(result);
     return;
@@ -120,8 +131,16 @@ void lex(parse_context &ctx) {
     return;
   }
   if (c == EOF) {
-    ctx.cur_tok.t = token::type::eof;
-    return;
+    if (std::empty(ctx.returns)) {
+      ctx.cur_tok.t = token::type::eof;
+      return;
+    } else {
+      fclose(ctx.file);
+      ctx.file = ctx.returns.back().file;
+      ctx.sloc = ctx.returns.back().sloc;
+      lex(ctx);
+      return;
+    }
   }
   ctx.cur_tok.t = token::type::error;
 }
@@ -262,6 +281,7 @@ expr *parse_expr(parse_context &ctx) {
   case token::type::if_:
   case token::type::define:
   case token::type::declare:
+  case token::type::include:
     return nullptr;
   }
   unreachable();
@@ -340,7 +360,7 @@ bool parse_decl(parse_context &ctx) {
   if (!ptr) {
     return false;
   }
-  if(ctx.cur_tok.t != token::type::rpar) {
+  if (ctx.cur_tok.t != token::type::rpar) {
     return false;
   }
   lex(ctx);
@@ -357,12 +377,31 @@ bool parse_decl(parse_context &ctx) {
   return true;
 }
 
+bool parse_include(parse_context &ctx) {
+  lex(ctx);
+  if (ctx.cur_tok.t != token::type::identifier)
+    return false;
+  const std::string_view include_file = ctx.cur_tok.value.s;
+  lex(ctx);
+  if (ctx.cur_tok.t != token::type::rpar)
+    return false;
+  ctx.returns.push_back({ctx.file, ctx.sloc});
+  ctx.file = std::fopen(std::string{include_file}.c_str(), "r");
+  if (!ctx.file)
+    return false;
+  ctx.sloc = {include_file};
+  lex(ctx);
+  return true;
+}
+
 bool parse_toplevel(parse_context &ctx) {
   while (ctx.cur_tok.t == token::type::lpar) {
     lex(ctx);
     if (ctx.cur_tok.t == token::type::define && !parse_def(ctx))
       return false;
     if (ctx.cur_tok.t == token::type::declare && !parse_decl(ctx))
+      return false;
+    if (ctx.cur_tok.t == token::type::include && !parse_include(ctx))
       return false;
   }
   return ctx.cur_tok.t == token::type::eof;

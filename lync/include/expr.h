@@ -14,8 +14,8 @@ namespace lyn {
 
 struct source_location {
   std::string_view file_name;
-  int line;
-  int col;
+  int line = 1;
+  int col = 1;
 };
 
 struct expr;
