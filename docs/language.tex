@@ -37,10 +37,20 @@ The language consists of the following expressions:\\[1.5ex]
   \texttt{True}, \texttt{expr2} otherwise\\
 \end{tabularx}
 
-At the top level the following form is available:\\[1.5ex]
+Types can also be expressed:\\[1.5ex]
+\begin{tabularx}{\linewidth}{lX}
+  \texttt{int}& Integer type\\
+  \texttt{bool}& Bool type\\
+  \texttt{unit}& Unit type\\
+  \texttt{(-> a1 a2 \ldots ret)} & Function type\\
+\end{tabularx}
+
+At the top level the following forms are available:\\[1.5ex]
 \begin{tabularx}{\linewidth}{lX}
   \texttt{(define name value)} & Defines a global \texttt{name} to
-                                 \texttt{value}.
+                                 \texttt{value}.\\
+  \texttt{(declare name type)} & Declares a global \texttt{name} with
+                                 \texttt{type}.\\
 \end{tabularx}
 
 \section{Types}
