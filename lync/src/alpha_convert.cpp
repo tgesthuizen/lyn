@@ -66,7 +66,8 @@ symbol_table alpha_convert(std::vector<toplevel_expr> &exprs) {
   }
   table.start_local_registering();
   for (auto &&decl : exprs) {
-    alpha_convert_expr(table, decl.value);
+    if (decl.value)
+      alpha_convert_expr(table, decl.value);
   }
   return table;
 }

@@ -64,6 +64,32 @@ public:
     id_to_type[id] = new (alloc_type()) type{type_variable{}};
   }
 
+  type *import_type_expr(const type_expr &expr) {
+    return std::visit(
+        [this](auto &&type_expr) {
+          using type_expr_t = std::decay_t<decltype(type_expr)>;
+          if (std::is_same_v<type_expr_t, int_type_expr>)
+            return int_t;
+          if (std::is_same_v<type_expr_t, bool_type_expr>)
+            return bool_t;
+          if (std::is_same_v<type_expr_t, unit_type_expr>)
+            return unit_t;
+          if constexpr (std::is_same_v<type_expr_t, func_type_expr>) {
+            assert(!std::empty(type_expr.types));
+            std::vector<type *> args;
+            std::transform(
+                std::begin(type_expr.types), std::end(type_expr.types) - 1,
+                std::back_inserter(args),
+                [this](auto &&expr) { return import_type_expr(*expr); });
+            return new (alloc_type())
+                type{function_type{spanify(alloc, args),
+                                   import_type_expr(*type_expr.types.back())}};
+          }
+          unreachable();
+        },
+        expr.content);
+  }
+
 private:
   void *alloc_type() { return alloc.allocate(sizeof(type), alignof(type)); }
 
@@ -173,7 +199,7 @@ void typecheck_t::setup_primitive_types(const symbol_table &stable) {
       throw std::invalid_argument{"Invalid enum value"};
     }();
   }
-} // namespace
+}
 
 } // namespace
 
@@ -185,7 +211,15 @@ void typecheck(std::vector<toplevel_expr> &exprs, const symbol_table &stable,
     functor.register_typevar(expr.id);
   }
   for (auto &&expr : exprs) {
-    functor.visit(*expr.value);
+    type *expr_type = nullptr;
+    type *type_expr_type = nullptr;
+    if (expr.value)
+      expr_type = functor.visit(*expr.value);
+    if (expr.type_value) {
+      type_expr_type = functor.import_type_expr(*expr.type_value);
+    }
+    if (expr_type && type_expr_type && !unify(expr_type, type_expr_type))
+      throw std::runtime_error{"Mismatching decl"};
   }
 }
 

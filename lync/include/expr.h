@@ -72,9 +72,25 @@ struct expr {
   struct type *type = nullptr;
 };
 
+struct type_expr;
+
+struct int_type_expr {};
+struct bool_type_expr {};
+struct unit_type_expr {};
+struct func_type_expr {
+  span<type_expr *> types;
+};
+using all_type_exprs =
+    type_list<int_type_expr, bool_type_expr, unit_type_expr, func_type_expr>;
+
+struct type_expr {
+  derive_pack_t<std::variant, all_type_exprs> content;
+};
+
 struct toplevel_expr {
   std::string_view name;
   int id;
+  type_expr *type_value;
   expr *value;
 };
 

@@ -163,6 +163,8 @@ std::unique_ptr<anf_context, delete_anf>
 genanf(std::vector<toplevel_expr> &exprs, const symbol_table &stable) {
   anf_generator gen(stable);
   for (auto &&expr : exprs) {
+    if (!expr.value)
+      continue;
     if (!std::holds_alternative<lambda_expr>(expr.value->content)) {
       fprintf(stderr, "Will not generate anything for %.*s!\n",
               static_cast<int>(std::size(expr.name)), expr.name.data());

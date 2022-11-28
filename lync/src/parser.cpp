@@ -14,10 +14,12 @@ struct token {
     eof,
     lpar,
     rpar,
+    arrow,
     let,
     lambda,
     if_,
     define,
+    declare,
     identifier,
     number,
   };
@@ -70,6 +72,10 @@ void lex(parse_context &ctx) {
       update_pos(c);
     }
     std::ungetc(c, ctx.file);
+    if (result == "->") {
+      ctx.cur_tok.t = token::type::arrow;
+      return;
+    }
     if (result == "let") {
       ctx.cur_tok.t = token::type::let;
       return;
@@ -84,6 +90,10 @@ void lex(parse_context &ctx) {
     }
     if (result == "define") {
       ctx.cur_tok.t = token::type::define;
+      return;
+    }
+    if (result == "declare") {
+      ctx.cur_tok.t = token::type::declare;
       return;
     }
     ctx.cur_tok.t = token::type::identifier;
@@ -246,36 +256,114 @@ expr *parse_expr(parse_context &ctx) {
   case token::type::error:
   case token::type::eof:
   case token::type::rpar:
+  case token::type::arrow:
   case token::type::let:
   case token::type::lambda:
   case token::type::if_:
   case token::type::define:
+  case token::type::declare:
     return nullptr;
   }
   unreachable();
 }
 
+bool parse_def(parse_context &ctx) {
+  lex(ctx);
+  if (ctx.cur_tok.t != token::type::identifier) {
+    return false;
+  }
+  const std::string_view name = ctx.cur_tok.value.s;
+  lex(ctx);
+  expr *const ptr = parse_expr(ctx);
+  if (!ptr) {
+    return false;
+  }
+  const auto end = std::end(ctx.defines);
+  const auto iter = std::find_if(
+      std::begin(ctx.defines), end,
+      [name](const toplevel_expr &expr) { return expr.name == name; });
+  if (iter == end)
+    ctx.defines.push_back(toplevel_expr{name, 0, nullptr, ptr});
+  else if (iter->value)
+    return false;
+  else
+    iter->value = ptr;
+  if (ctx.cur_tok.t != token::type::rpar) {
+    return false;
+  }
+  lex(ctx);
+  return true;
+}
+
+type_expr *make_type_expr(parse_context &ctx, const type_expr &expr) {
+  return new (ctx.cc.expr_alloc.allocate(sizeof(type_expr), alignof(type_expr)))
+      type_expr{expr};
+}
+
+type_expr *parse_type_expr(parse_context &ctx) {
+  if (ctx.cur_tok.t == token::type::identifier) {
+    const auto ident = ctx.cur_tok.value.s;
+    if (ident == "int") {
+      return make_type_expr(ctx, type_expr{int_type_expr{}});
+    }
+    if (ident == "bool")
+      return make_type_expr(ctx, type_expr{bool_type_expr{}});
+    if (ident == "unit")
+      return make_type_expr(ctx, type_expr{unit_type_expr{}});
+  }
+  if (ctx.cur_tok.t == token::type::lpar) {
+    lex(ctx);
+    if (ctx.cur_tok.t != token::type::arrow) {
+      return nullptr;
+    }
+    lex(ctx);
+    std::vector<type_expr *> types;
+    while (ctx.cur_tok.t != token::type::rpar) {
+      types.push_back(parse_type_expr(ctx));
+      lex(ctx);
+    }
+    lex(ctx);
+    return make_type_expr(
+        ctx, type_expr{func_type_expr{spanify(ctx.cc.expr_alloc, types)}});
+  }
+  return nullptr;
+}
+
+bool parse_decl(parse_context &ctx) {
+  lex(ctx);
+  if (ctx.cur_tok.t != token::type::identifier) {
+    return false;
+  }
+  const std::string_view name = ctx.cur_tok.value.s;
+  lex(ctx);
+  type_expr *const ptr = parse_type_expr(ctx);
+  if (!ptr) {
+    return false;
+  }
+  if(ctx.cur_tok.t != token::type::rpar) {
+    return false;
+  }
+  lex(ctx);
+  const auto end = std::end(ctx.defines);
+  const auto iter = std::find_if(
+      std::begin(ctx.defines), end,
+      [name](const toplevel_expr &expr) { return expr.name == name; });
+  if (iter == end)
+    ctx.defines.push_back(toplevel_expr{name, 0, ptr, nullptr});
+  else if (iter->type_value)
+    return false;
+  else
+    iter->type_value = ptr;
+  return true;
+}
+
 bool parse_toplevel(parse_context &ctx) {
   while (ctx.cur_tok.t == token::type::lpar) {
     lex(ctx);
-    if (ctx.cur_tok.t != token::type::define) {
+    if (ctx.cur_tok.t == token::type::define && !parse_def(ctx))
       return false;
-    }
-    lex(ctx);
-    if (ctx.cur_tok.t != token::type::identifier) {
+    if (ctx.cur_tok.t == token::type::declare && !parse_decl(ctx))
       return false;
-    }
-    const std::string_view name = ctx.cur_tok.value.s;
-    lex(ctx);
-    expr *ptr = parse_expr(ctx);
-    if (!ptr) {
-      return false;
-    }
-    ctx.defines.push_back(toplevel_expr{name, 0, std::move(ptr)});
-    if (ctx.cur_tok.t != token::type::rpar) {
-      return false;
-    }
-    lex(ctx);
   }
   return ctx.cur_tok.t == token::type::eof;
 }
