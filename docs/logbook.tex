@@ -315,8 +315,8 @@ gcd.s: examples/gcd.scm
 After a few minor code generation issues have been fixed I found the
 resulting executable to be functional.
 The corresponding program looks pretty good when disassembled:
-\begin{lstlisting}[language=Assembler, basicstyle=\footnotesize]
 
+\begin{lstlisting}[language=Assembler, basicstyle=\footnotesize]
 gcd:     file format elf32-littlearm
 
 
@@ -468,5 +468,12 @@ All in all the changes of today will help in porting the compiler to
 embedded systems.
 Also, the size of the resulting binary on AMD64 shrinked from 200kB to
 100kB, slicing the size straight in half.
+
+\section{2022-11-28}
+
+\subsection{What happened today?}
+
+Added \texttt{include} and \texttt{declare} top level expressions to
+the language.
 
 \end{document}
