@@ -33,7 +33,8 @@ struct delete_anf {
 };
 
 std::unique_ptr<anf_context, delete_anf>
-genanf(std::vector<toplevel_expr> &exprs, const symbol_table &stable);
+genanf(std::vector<toplevel_expr> &exprs, string_table &stbl,
+       const symbol_table &symtab);
 void print_anf(anf_context &ctx, FILE *out);
 void genasm(anf_context &ctx, FILE *out);
 

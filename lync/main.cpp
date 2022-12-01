@@ -21,9 +21,9 @@ exec_frontend(FILE *input, std::string_view file_name,
   auto decls = lyn::parse(input, file_name, cc);
   if (!decls)
     return nullptr;
-  auto table = lyn::alpha_convert(*decls);
-  lyn::typecheck(*decls, table, cc.type_alloc);
-  return lyn::genanf(*decls, table);
+  cc.symtab = lyn::alpha_convert(*decls);
+  lyn::typecheck(*decls, cc.symtab, cc.type_alloc);
+  return lyn::genanf(*decls, cc.stbl, cc.symtab);
 }
 
 } // namespace

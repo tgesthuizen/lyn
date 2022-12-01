@@ -18,8 +18,8 @@ struct fun_info {
 
 class anf_generator {
 public:
-  explicit anf_generator(const symbol_table &stable)
-      : stable{stable}, next_id{stable.get_next_id()} {}
+  explicit anf_generator(string_table &stbl, const symbol_table &symtab)
+      : stbl{stbl}, symtab{symtab}, next_id{symtab.get_next_id()} {}
 
   void push_func(std::string_view name, lambda_expr *ptr) {
     funcs_to_generate.push_back(fun_info{name, *ptr, true});
@@ -56,7 +56,7 @@ public:
   }
 
   int operator()(variable_expr &expr) {
-    if (expr.id >= stable.get_first_local_id()) {
+    if (expr.id >= symtab.get_first_local_id()) {
       if (tail_pos)
         current_block->content.emplace_back(anf_return{expr.id});
       return expr.id;
@@ -85,7 +85,7 @@ public:
 
   int operator()(lambda_expr &expr) {
     const int lambda_id = next_id++;
-    std::string fun_name = "fun" + std::to_string(lambda_id);
+    const auto fun_name = stbl.store("fun" + std::to_string(lambda_id));
     funcs_to_generate.push_back(fun_info{fun_name, expr, false});
     current_block->content.emplace_back(anf_global{fun_name, lambda_id});
     return lambda_id;
@@ -147,21 +147,24 @@ public:
   anf_context &&get_context() && { return std::move(ctx); }
 
 private:
-  std::unordered_map<int, int> local_mapping;
-  const symbol_table &stable;
-  std::vector<fun_info> funcs_to_generate;
-  anf_context ctx;
-  anf_def *current_def;
-  basic_block *current_block;
+  string_table &stbl;
+  const symbol_table &symtab;
   int next_id;
-  bool tail_pos;
+
+  std::unordered_map<int, int> local_mapping = {};
+  std::vector<fun_info> funcs_to_generate = {};
+  anf_context ctx = {};
+  anf_def *current_def = nullptr;
+  basic_block *current_block = nullptr;
+  bool tail_pos = true;
 };
 
 } // namespace
 
 std::unique_ptr<anf_context, delete_anf>
-genanf(std::vector<toplevel_expr> &exprs, const symbol_table &stable) {
-  anf_generator gen(stable);
+genanf(std::vector<toplevel_expr> &exprs, string_table &stbl,
+       const symbol_table &symtab) {
+  anf_generator gen(stbl, symtab);
   for (auto &&expr : exprs) {
     if (!expr.value)
       continue;
