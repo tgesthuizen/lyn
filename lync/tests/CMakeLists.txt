@@ -12,6 +12,7 @@ FetchContent_MakeAvailable(googletest)
 
 add_executable(
   compiler-tests
+  meta_tests.cpp
   symbol_table_tests.cpp
 )
 target_link_libraries(compiler-tests
