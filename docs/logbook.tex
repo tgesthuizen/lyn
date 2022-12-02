@@ -476,4 +476,35 @@ Also, the size of the resulting binary on AMD64 shrinked from 200kB to
 Added \texttt{include} and \texttt{declare} top level expressions to
 the language.
 
+\section{2022-12-01}
+
+\subsection{What happened today?}
+
+Added some basic unit testing.
+
+\section{2022-12-02}
+
+\subsection{Notes of today}
+
+Today I discovered that LLVM offers three different register
+allocators:
+\begin{description}
+\item[Simple] Is exactly the ``register allocator'' which is currently
+  implemented by lync:
+  All register values are loaded before an instruction and all results
+  are spilled to the stack afterwards.
+\item[Local] An improved version of the simple register allocator:
+  Registers will be allocated per basic block and live values are
+  tried to be kept.
+\item[Linear scan] A heavily adapted and modified linear scan
+  allocator which is the flag ship register allocation of LLVM.
+\end{description}
+
+I think it's pretty interesting that LLVM does not sport graph
+coloring register allocations ala Chaitin et al., but uses a linear
+scan adaptation instead.
+This is nice practical evidence that the result of linear scan
+register allocation can stand up to the results of graph coloring
+approaches.
+
 \end{document}
