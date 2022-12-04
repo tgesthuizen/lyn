@@ -4,7 +4,10 @@
 #include "symbol_table.h"
 
 #include <algorithm>
+#include <string_view>
+#include <unordered_map>
 #include <utility>
+#include <variant>
 
 namespace lyn {
 
@@ -36,6 +39,11 @@ private:
   const symbol_table &symtab;
   int next_id;
 
+  struct local_info {
+    int ref_count = 0;
+    std::variant<std::monostate, int, std::string_view> rewritable;
+  };
+  std::unordered_map<int, local_info> local_infos;
   std::vector<fun_info> funcs_to_generate = {};
   anf_context ctx = {};
   anf_def *current_def = nullptr;
@@ -77,12 +85,14 @@ int anf_generator::visit_expr(const lyn::expr &value) {
     }
     if constexpr (std::is_same_v<expr_t, variable_expr>) {
       if (expr.id >= symtab.get_first_local_id()) {
+        ++local_infos[expr.id].ref_count;
         if (tail_pos)
           current_block->content.emplace_back(anf_return{expr.id});
         return expr.id;
       }
       const auto global_id = next_id++;
       current_block->content.emplace_back(anf_global{expr.name, global_id});
+      local_infos[global_id] = {tail_pos ? 1 : 0, expr.name};
       if (tail_pos)
         current_block->content.emplace_back(anf_return{global_id});
       return global_id;
