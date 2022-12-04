@@ -83,6 +83,8 @@ int anf_generator::visit_expr(const lyn::expr &value) {
       }
       const auto global_id = next_id++;
       current_block->content.emplace_back(anf_global{expr.name, global_id});
+      if (tail_pos)
+        current_block->content.emplace_back(anf_return{global_id});
       return global_id;
     }
     if constexpr (std::is_same_v<expr_t, apply_expr>) {
