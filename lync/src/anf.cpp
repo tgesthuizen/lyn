@@ -109,8 +109,14 @@ int anf_generator::visit_expr(const lyn::expr &value) {
       int call_id = 0;
       if (!tail_pos)
         call_id = next_id++;
+      decltype(std::declval<anf_call>().call_target) target = fid;
+      if (std::holds_alternative<std::string_view>(
+              local_infos[fid].rewritable)) {
+        target = std::get<std::string_view>(local_infos[fid].rewritable);
+        --local_infos[fid].ref_count;
+      }
       current_block->content.emplace_back(
-          anf_call{fid, std::move(args), call_id, tail_pos});
+          anf_call{target, std::move(args), call_id, tail_pos});
       return call_id;
     }
     if constexpr (std::is_same_v<expr_t, lambda_expr>) {
