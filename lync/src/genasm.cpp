@@ -113,17 +113,29 @@ void genasm(anf_context &ctx, FILE *out) {
                           "\tmov lr, r0\n",
                           (local_count + 1) * 4);
                 }
-                fprintf(out, "\tldr r4, [sp, #%d]\n",
-                        sp_offset_for_local(val.call_id));
+                if (std::holds_alternative<int>(val.call_target)) {
+                  fprintf(out, "\tldr r4, [sp, #%d]\n",
+                          sp_offset_for_local(std::get<int>(val.call_target)));
+                }
                 for (std::size_t i = 0; i < std::size(val.arg_ids); ++i) {
                   fprintf(out, "\tldr r%d, [sp, #%d]\n", static_cast<int>(i),
                           sp_offset_for_local(val.arg_ids[i]));
                 }
                 if (val.is_tail) {
-                  fprintf(out,
-                          "\tadd sp, #%d\n"
-                          "\tbx r4\n",
-                          (local_count + 2) * 4);
+                  fprintf(out, "\tadd sp, #%d\n", (local_count + 2) * 4);
+                  std::visit(
+                      [&](auto &&target) {
+                        using target_t = std::decay_t<decltype(target)>;
+                        if constexpr (std::is_same_v<target_t,
+                                                     std::string_view>) {
+                          fprintf(out, "\tbx \"%.*s\"\n",
+                                  static_cast<int>(std::size(target)),
+                                  std::data(target));
+                        } else {
+                          fputs("\tbx r4\n", out);
+                        }
+                      },
+                      val.call_target);
                 } else {
                   const int stack_slot = stack_offset++;
                   local_to_stack_slot[val.res_id] = stack_slot;

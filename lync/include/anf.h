@@ -28,7 +28,7 @@ struct anf_constant {
 };
 
 struct anf_call {
-  int call_id;
+  std::variant<int, std::string_view> call_target;
   std::vector<int> arg_ids;
   int res_id;
   bool is_tail;

@@ -50,11 +50,39 @@ void print_anf(anf_context &ctx, FILE *out) {
               }
               if constexpr (std::is_same_v<val_t, anf_call>) {
                 if (val.is_tail) {
-                  fprintf(out, "\ttailcall %d(", val.call_id);
+                  fputs("\ttailcall ", out);
+                  std::visit(
+                      [&](auto &&target) {
+                        using target_t = std::decay_t<decltype(target)>;
+                        if constexpr (std::is_same_v<target_t, int>) {
+                          fprintf(out, "%d(", target);
+                        }
+                        if constexpr (std::is_same_v<target_t,
+                                                     std::string_view>) {
+                          fprintf(out, "\"%.*s\"(",
+                                  static_cast<int>(std::size(target)),
+                                  std::data(target));
+                        }
+                      },
+                      val.call_target);
                   print_int_list(val.arg_ids, out);
                   fputs(")\n", out);
                 } else {
-                  fprintf(out, "\t%d <- call %d(", val.res_id, val.call_id);
+                  fprintf(out, "\t%d <- call ", val.res_id);
+                  std::visit(
+                      [&](auto &&target) {
+                        using target_t = std::decay_t<decltype(target)>;
+                        if constexpr (std::is_same_v<target_t, int>) {
+                          fprintf(out, "%d(", target);
+                        }
+                        if constexpr (std::is_same_v<target_t,
+                                                     std::string_view>) {
+                          fprintf(out, "\"%.*s\"(",
+                                  static_cast<int>(std::size(target)),
+                                  std::data(target));
+                        }
+                      },
+                      val.call_target);
                   print_int_list(val.arg_ids, out);
                   fputs(")\n", out);
                 }
