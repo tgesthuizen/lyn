@@ -139,9 +139,20 @@ void genasm(anf_context &ctx, FILE *out) {
                 } else {
                   const int stack_slot = stack_offset++;
                   local_to_stack_slot[val.res_id] = stack_slot;
-                  fprintf(out,
-                          "\tblx r4\n"
-                          "\tstr r0, [sp, #%d]\n",
+                  std::visit(
+                      [&](auto &&value) {
+                        using value_t = std::decay_t<decltype(value)>;
+                        if constexpr (std::is_same_v<value_t,
+                                                     std::string_view>) {
+                          fprintf(out, "\tblx \"%.*s\"\n",
+                                  static_cast<int>(std::size(value)),
+                                  std::data(value));
+                        } else {
+                          fputs("\tblx r4\n", out);
+                        }
+                      },
+                      val.call_target);
+                  fprintf(out, "\tstr r0, [sp, #%d]\n",
                           sp_offset_for_local(val.res_id));
                 }
               }
