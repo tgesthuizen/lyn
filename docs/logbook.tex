@@ -507,4 +507,168 @@ This is nice practical evidence that the result of linear scan
 register allocation can stand up to the results of graph coloring
 approaches.
 
+\section{2022-12-04}
+
+\subsection{Notes of today}
+
+Implemented inlining of known global functions.
+I.e. \texttt{fib} now looks like this:
+\begin{lstlisting}
+	.arch armv5t
+	.thumb
+	.syntax unified
+	.section ".text", "ax"
+	.global "fib-helper"
+	.type "fib-helper", %function
+	.thumb_func
+"fib-helper":
+.L1:
+	push {r0, r1, r2, r6, lr}
+	sub sp, sp, #12
+	ldr r0, ="="
+	str r0, [sp, #8]
+	ldr r0, =#0
+	str r0, [sp, #4]
+	ldr r4, [sp, #8]
+	ldr r0, [sp, #20]
+	ldr r1, [sp, #4]
+	blx r4
+	str r0, [sp, #0]
+	ldr r0, [sp, #0]
+	tst r0, r0
+	beq .L3
+	b   .L2
+.L2:
+	sub sp, sp, #0
+	ldr r0, [sp, #12]
+	add sp, #24
+	pop {r6, pc}
+.L3:
+	sub sp, sp, #28
+	ldr r0, ="fib-helper"
+	str r0, [sp, #24]
+	ldr r0, ="+"
+	str r0, [sp, #20]
+	ldr r4, [sp, #20]
+	ldr r0, [sp, #40]
+	ldr r1, [sp, #44]
+	blx r4
+	str r0, [sp, #16]
+	ldr r0, ="-"
+	str r0, [sp, #12]
+	ldr r0, =#1
+	str r0, [sp, #8]
+	ldr r4, [sp, #12]
+	ldr r0, [sp, #48]
+	ldr r1, [sp, #8]
+	blx r4
+	str r0, [sp, #4]
+	ldr r0, [sp, #56]
+	mov lr, r0
+	ldr r4, [sp, #24]
+	ldr r0, [sp, #44]
+	ldr r1, [sp, #16]
+	ldr r2, [sp, #4]
+	add sp, #60
+	bx r4
+	.pool
+	.size "fib-helper", .-"fib-helper"
+	.global "fib"
+	.type "fib", %function
+	.thumb_func
+"fib":
+.L4:
+	push {r0, r6, lr}
+	sub sp, sp, #16
+	ldr r0, ="fib-helper"
+	str r0, [sp, #12]
+	ldr r0, =#1
+	str r0, [sp, #8]
+	ldr r0, =#1
+	str r0, [sp, #4]
+	ldr r0, [sp, #24]
+	mov lr, r0
+	ldr r4, [sp, #12]
+	ldr r0, [sp, #8]
+	ldr r1, [sp, #4]
+	ldr r2, [sp, #16]
+	add sp, #28
+	bx r4
+	.pool
+	.size "fib", .-"fib"
+\end{lstlisting}
+instead of this
+\begin{lstlisting}
+	.arch armv5t
+	.thumb
+	.syntax unified
+	.section ".text", "ax"
+	.global "fib-helper"
+	.type "fib-helper", %function
+	.thumb_func
+"fib-helper":
+.L1:
+	push {r0, r1, r2, r6, lr}
+	sub sp, sp, #8
+	ldr r0, =#0
+	str r0, [sp, #4]
+	ldr r0, [sp, #16]
+	ldr r1, [sp, #4]
+	blx "="
+	str r0, [sp, #0]
+	ldr r0, [sp, #0]
+	tst r0, r0
+	beq .L3
+	b   .L2
+.L2:
+	sub sp, sp, #0
+	ldr r0, [sp, #8]
+	add sp, #20
+	pop {r6, pc}
+.L3:
+	sub sp, sp, #16
+	ldr r0, [sp, #24]
+	ldr r1, [sp, #28]
+	blx "+"
+	str r0, [sp, #12]
+	ldr r0, =#1
+	str r0, [sp, #8]
+	ldr r0, [sp, #32]
+	ldr r1, [sp, #8]
+	blx "-"
+	str r0, [sp, #4]
+	ldr r0, [sp, #40]
+	mov lr, r0
+	ldr r0, [sp, #28]
+	ldr r1, [sp, #12]
+	ldr r2, [sp, #4]
+	add sp, #44
+	bx "fib-helper"
+	.pool
+	.size "fib-helper", .-"fib-helper"
+	.global "fib"
+	.type "fib", %function
+	.thumb_func
+"fib":
+.L4:
+	push {r0, r6, lr}
+	sub sp, sp, #12
+	ldr r0, =#1
+	str r0, [sp, #8]
+	ldr r0, =#1
+	str r0, [sp, #4]
+	ldr r0, [sp, #20]
+	mov lr, r0
+	ldr r0, [sp, #8]
+	ldr r1, [sp, #4]
+	ldr r2, [sp, #12]
+	add sp, #24
+	bx "fib-helper"
+	.pool
+	.size "fib", .-"fib"
+\end{lstlisting}
+
+The new code tends to be a lot shorter and also safes a lot of stack
+space and reduces register pressure.
+
 \end{document}
