@@ -36,7 +36,6 @@ private:
   const symbol_table &symtab;
   int next_id;
 
-  std::unordered_map<int, int> local_mapping = {};
   std::vector<fun_info> funcs_to_generate = {};
   anf_context ctx = {};
   anf_def *current_def = nullptr;
