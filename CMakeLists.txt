@@ -2,7 +2,19 @@ cmake_minimum_required(VERSION 3.10)
 
 project(spp CXX)
 
+enable_testing()
+
 include(ExternalProject)
+
+set(LYN_EXAMPLE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/examples)
+set(LYN_EXAMPLES
+  empty.scm
+  external.scm
+  fib.scm
+  gcd.scm
+  identity.scm
+  two.scm
+)
 
 add_subdirectory(lync)
 

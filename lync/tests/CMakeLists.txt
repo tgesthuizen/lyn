@@ -23,3 +23,23 @@ target_link_libraries(compiler-tests
 
 include(GoogleTest)
 gtest_discover_tests(compiler-tests)
+
+set(LYNC_FAIL_TESTS
+  clojures_are_not_supported.scm
+  non-existent-variable-ref.scm
+)
+foreach(test ${LYNC_FAIL_TESTS})
+  add_test(
+    NAME "${test}_fails"
+    COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/test_fail.sh $<TARGET_FILE:lync> ${test}
+  )
+endforeach()
+
+if(DEFINED LYN_EXAMPLE_DIR)
+  foreach(example ${LYN_EXAMPLES})
+    add_test(
+      NAME "${example}_compiles"
+      COMMAND $<TARGET_FILE:lync> ${LYN_EXAMPLE_DIR}/${example}
+    )
+  endforeach()
+endif()
