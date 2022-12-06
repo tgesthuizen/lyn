@@ -42,6 +42,9 @@ public:
 
 private:
   int visit_expr(const lyn::expr &value);
+  template <class... Args> void emit_instr(Args &&...args) {
+    current_block->content.emplace_back(std::forward<Args>(args)...);
+  }
 
   string_table &stbl;
   const symbol_table &symtab;
@@ -66,10 +69,10 @@ void anf_generator::run() {
                    std::back_inserter(prologue.args),
                    [](const variable_expr &expr) { return expr.id; });
     new_def.blocks.emplace_back();
-    new_def.blocks.back().content.emplace_back(std::move(prologue));
-    new_def.blocks.back().content.emplace_back(anf_adjust_stack{});
     current_def = &new_def;
     current_block = &new_def.blocks.back();
+    emit_instr(std::move(prologue));
+    emit_instr(anf_adjust_stack{});
     tail_pos = true;
     visit_expr(*info.expr.body);
     ctx.defs.emplace_back(std::move(new_def));
@@ -81,24 +84,23 @@ int anf_generator::visit_expr(const lyn::expr &value) {
     using expr_t = std::decay_t<decltype(expr)>;
     if constexpr (std::is_same_v<expr_t, constant_expr>) {
       const int constant_id = next_id++;
-      current_block->content.emplace_back(
-          anf_expr{anf_constant{expr.value, constant_id}});
+      emit_instr(anf_constant{expr.value, constant_id});
       if (tail_pos)
-        current_block->content.emplace_back(anf_expr{anf_return{constant_id}});
+        emit_instr(anf_return{constant_id});
       return constant_id;
     }
     if constexpr (std::is_same_v<expr_t, variable_expr>) {
       if (expr.id >= symtab.get_first_local_id()) {
         ++local_infos[expr.id].ref_count;
         if (tail_pos)
-          current_block->content.emplace_back(anf_return{expr.id});
+          emit_instr(anf_return{expr.id});
         return expr.id;
       }
       const auto global_id = next_id++;
-      current_block->content.emplace_back(anf_global{expr.name, global_id});
+      emit_instr(anf_global{expr.name, global_id});
       local_infos[global_id] = {tail_pos ? 1 : 0, expr.name};
       if (tail_pos)
-        current_block->content.emplace_back(anf_return{global_id});
+        emit_instr(anf_return{global_id});
       return global_id;
     }
     if constexpr (std::is_same_v<expr_t, apply_expr>) {
@@ -123,22 +125,21 @@ int anf_generator::visit_expr(const lyn::expr &value) {
       } else {
         ++local_infos[fid].ref_count;
       }
-      current_block->content.emplace_back(
-          anf_call{target, std::move(args), call_id, tail_pos});
+      emit_instr(anf_call{target, std::move(args), call_id, tail_pos});
       return call_id;
     }
     if constexpr (std::is_same_v<expr_t, lambda_expr>) {
       const int lambda_id = next_id++;
       const auto fun_name = stbl.store("fun" + std::to_string(lambda_id));
       funcs_to_generate.push_back(fun_info{fun_name, expr, false});
-      current_block->content.emplace_back(anf_global{fun_name, lambda_id});
+      emit_instr(anf_global{fun_name, lambda_id});
       return lambda_id;
     }
     if constexpr (std::is_same_v<expr_t, let_expr>) {
       const auto tail_pos_saved = std::exchange(tail_pos, false);
       for (auto &&binding : expr.bindings) {
         const int bid = visit_expr(*binding.body);
-        current_block->content.emplace_back(anf_assoc{bid, binding.id});
+        emit_instr(anf_assoc{bid, binding.id});
       }
       tail_pos = tail_pos_saved;
       if (std::empty(expr.body)) {
@@ -159,31 +160,31 @@ int anf_generator::visit_expr(const lyn::expr &value) {
           current_block - current_def->blocks.data();
       current_def->blocks.emplace_back();
       current_def->blocks.emplace_back();
-      if (!tail_pos)
+      int ret_id = -1;
+      if (!tail_pos) {
         current_def->blocks.emplace_back();
+        ret_id = next_id++;
+      }
       const int total_blocks = std::size(current_def->blocks);
       const int then_block = total_blocks - 2;
       const int else_block = total_blocks - 1;
       const int cont_block = total_blocks - 3;
-      current_def->blocks[this_block_idx].content.push_back(
-          anf_cond{cond_id, then_block, else_block});
-      current_block = &current_def->blocks[then_block];
-      current_block->content.emplace_back(anf_adjust_stack{});
-      const auto then_id = visit_expr(*expr.then);
-      current_block = &current_def->blocks[else_block];
-      current_block->content.emplace_back(anf_adjust_stack{});
-      const auto else_id = visit_expr(*expr.els);
+      const auto emit_branch = [this, cont_block,
+                                ret_id](int block, const lyn::expr &expr) {
+        current_block = &current_def->blocks[block];
+        emit_instr(anf_adjust_stack{});
+        const int expr_id = visit_expr(expr);
+        if (tail_pos)
+          return;
+        emit_instr(anf_assoc{expr_id, ret_id});
+        emit_instr(anf_jump{cont_block});
+      };
+      current_block = &current_def->blocks[this_block_idx];
+      emit_instr(anf_cond{cond_id, then_block, else_block});
+      emit_branch(then_block, *expr.then);
+      emit_branch(else_block, *expr.els);
       if (tail_pos)
         return 0;
-      const int ret_id = next_id++;
-      current_def->blocks[then_block].content.emplace_back(
-          anf_assoc{then_id, ret_id});
-      current_def->blocks[then_block].content.emplace_back(
-          anf_jump{cont_block});
-      current_def->blocks[else_block].content.emplace_back(
-          anf_assoc{else_id, ret_id});
-      current_def->blocks[else_block].content.emplace_back(
-          anf_jump{cont_block});
       current_block = &current_def->blocks[cont_block];
       return ret_id;
     }
