@@ -26,7 +26,10 @@ public:
 
   void pop_scope(scope &s);
 
-  int operator[](std::string_view name) const { return name_to_id.at(name); }
+  int operator[](std::string_view name) const {
+    const auto iter = name_to_id.find(name);
+    return iter != std::end(name_to_id) ? iter->second : 0;
+  }
 
   int get_next_id() const { return next_id; }
   int get_first_global_id() const { return first_global_id; }

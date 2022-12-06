@@ -21,7 +21,8 @@ exec_frontend(FILE *input, std::string_view file_name,
   auto decls = lyn::parse(input, file_name, cc);
   if (!decls)
     return nullptr;
-  cc.symtab = lyn::alpha_convert(*decls);
+  if (!lyn::alpha_convert(*decls, cc.symtab))
+    return nullptr;
   lyn::typecheck(*decls, cc.symtab, cc.type_alloc);
   return lyn::genanf(*decls, cc.stbl, cc.symtab);
 }
