@@ -18,9 +18,9 @@ using derive_pack_t = typename derive_pack<Target, Base>::type;
   // Uses compiler specific extensions if possible.
   // Even if no extension is used, undefined behavior is still raised by
   // an empty function body and the noreturn attribute.
-#ifdef __GNUC__ // GCC, Clang, ICC
+#if defined(__GNUC__) // GCC, Clang, ICC
   __builtin_unreachable();
-#elifdef _MSC_VER // MSVC
+#elif defined(_MSC_VER) // MSVC
   __assume(false);
 #endif
 }
