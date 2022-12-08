@@ -31,7 +31,9 @@ set(LYNC_FAIL_TESTS
 foreach(test ${LYNC_FAIL_TESTS})
   add_test(
     NAME "${test}_fails"
-    COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/test_fail.sh $<TARGET_FILE:lync> ${test}
+    COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/test_fail.sh
+            $<TARGET_FILE:lync>
+	    ${CMAKE_CURRENT_SOURCE_DIR}/fails/${test}
   )
 endforeach()
 
