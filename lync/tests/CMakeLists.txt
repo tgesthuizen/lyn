@@ -25,7 +25,11 @@ include(GoogleTest)
 gtest_discover_tests(compiler-tests)
 
 set(LYNC_FAIL_TESTS
+  application_return_mismatch.scm
+  application_type_mismatch.scm
   clojures_are_not_supported.scm
+  if_cond_branches_do_not_unify.scm
+  if_cond_not_bool.scm
   non-existent-variable-ref.scm
 )
 foreach(test ${LYNC_FAIL_TESTS})
