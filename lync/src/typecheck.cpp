@@ -5,6 +5,7 @@
 #include "types.h"
 
 #include <algorithm>
+#include <cstdio>
 #include <stdexcept>
 #include <type_traits>
 #include <unordered_map>
@@ -12,6 +13,31 @@
 namespace lyn {
 
 namespace {
+
+void print_type(type *lhs);
+void print_type(int_type) { fputs("int", stderr); }
+void print_type(bool_type) { fputs("bool", stderr); }
+void print_type(unit_type) { fputs("unit", stderr); }
+void print_type(const function_type &type) {
+
+  fputs("(-> ", stderr);
+  for (auto &&param : type.params) {
+    print_type(param);
+    fputc(' ', stderr);
+  }
+  print_type(type.result);
+  fputc(')', stderr);
+}
+void print_type(const type_variable &var) {
+  if (!var.target) {
+    fputs("[ ]", stderr);
+  } else {
+    print_type(var.target);
+  }
+}
+void print_type(type *lhs) {
+  std::visit([](auto &&expr) { print_type(expr); }, lhs->content);
+}
 
 bool unify(type *lhs, type *rhs) {
   return std::visit(
@@ -101,7 +127,7 @@ private:
 };
 
 type *typecheck_t::visit(expr &target) {
-  const auto typecheck_value = [this](auto &&expr) {
+  const auto typecheck_value = [this, &target](auto &&expr) -> type * {
     using expr_t = std::decay_t<decltype(expr)>;
     if constexpr (std::is_same_v<expr_t, constant_expr>) {
       return int_t;
@@ -111,16 +137,31 @@ type *typecheck_t::visit(expr &target) {
     }
     if constexpr (std::is_same_v<expr_t, apply_expr>) {
       auto *const ftype = visit(*expr.func);
+      if (!ftype)
+        return nullptr;
       function_type ft;
       std::vector<type *> params;
       for (auto &&arg : expr.args) {
-        params.push_back(visit(*arg));
+        const auto arg_t = visit(*arg);
+        if (!arg_t)
+          return nullptr;
+        params.push_back(arg_t);
       }
       ft.params = spanify(alloc, params);
       type *const result = new (alloc_type()) type{type_variable{}};
       ft.result = result;
-      if (!unify(new (alloc_type()) type{std::move(ft)}, ftype))
-        throw std::runtime_error{"Cannot unify function application"};
+      if (auto *const applied_type = new (alloc_type()) type{std::move(ft)};
+          !unify(applied_type, ftype)) {
+        fprintf(stderr, "%.*s:%d:%d: error: applying function of type ",
+                static_cast<int>(std::size(target.sloc.file_name)),
+                std::data(target.sloc.file_name), target.sloc.line,
+                target.sloc.col);
+        print_type(ftype);
+        fputs(" where ", stderr);
+        print_type(applied_type);
+        fputs(" is expected\n", stderr);
+        return nullptr;
+      }
       return result;
     }
     if constexpr (std::is_same_v<expr_t, lambda_expr>) {
@@ -131,6 +172,8 @@ type *typecheck_t::visit(expr &target) {
         args.push_back(arg);
       }
       auto *const ret = visit(*expr.body);
+      if (!ret)
+        return nullptr;
       return new (alloc_type()) type{function_type{spanify(alloc, args), ret}};
     }
     if constexpr (std::is_same_v<expr_t, let_expr>) {
@@ -140,19 +183,49 @@ type *typecheck_t::visit(expr &target) {
       if (std::empty(expr.body)) {
         return unit_t;
       }
-      std::for_each(std::begin(expr.body), std::end(expr.body) - 1,
-                    [this](lyn::expr *ptr) { visit(*ptr); });
+      if (!std::all_of(
+              std::begin(expr.body), std::end(expr.body) - 1,
+              [this](lyn::expr *ptr) { return visit(*ptr) != nullptr; }))
+        return nullptr;
       return visit(*expr.body.back());
     }
     if constexpr (std::is_same_v<expr_t, if_expr>) {
       auto *const cond_t = visit(*expr.cond);
+      if (!cond_t)
+        return nullptr;
       if (!unify(bool_t, cond_t)) {
-        throw std::runtime_error{"Not a valid condition"};
+        fprintf(stderr, "%.*s:%d:%d: error: Using expression of type ",
+                static_cast<int>(std::size(target.sloc.file_name)),
+                std::data(target.sloc.file_name), target.sloc.line,
+                target.sloc.col);
+        print_type(cond_t);
+        fputs(" in if condition\n", stderr);
+        return nullptr;
       }
       auto *const then_t = visit(*expr.then);
+      if (!then_t)
+        return nullptr;
       auto *const else_t = visit(*expr.els);
+      if (!else_t)
+        return nullptr;
       if (!unify(then_t, else_t)) {
-        throw std::runtime_error{"Branches have different type"};
+        fprintf(stderr, "%.*s:%d:%d: error: if branches do not unify\n",
+                static_cast<int>(std::size(target.sloc.file_name)),
+                std::data(target.sloc.file_name), target.sloc.line,
+                target.sloc.col);
+        fprintf(stderr, "%.*s:%d:%d: info: then branch of type ",
+                static_cast<int>(std::size(expr.then->sloc.file_name)),
+                std::data(expr.then->sloc.file_name), expr.then->sloc.line,
+                expr.then->sloc.col);
+        print_type(then_t);
+        fputc('\n', stderr);
+        fprintf(stderr, "%.*s:%d:%d: info: else branch of type ",
+                static_cast<int>(std::size(expr.els->sloc.file_name)),
+                std::data(expr.els->sloc.file_name), expr.els->sloc.line,
+                expr.els->sloc.col);
+        print_type(else_t);
+        fputc('\n', stderr);
+        return nullptr;
       }
       return then_t;
     }
@@ -160,7 +233,7 @@ type *typecheck_t::visit(expr &target) {
   return target.type = std::visit(typecheck_value, target.content);
 }
 
-void typecheck_t::setup_primitive_types(const symbol_table &stable) {
+void typecheck_t::setup_primitive_types(const symbol_table &symtab) {
   // TODO: Is there really no way to create a std::initializer list for a
   // function template call but to bind the brace init list to an auto variable?
   auto bi_int_args = {int_t, int_t};
@@ -179,7 +252,7 @@ void typecheck_t::setup_primitive_types(const symbol_table &stable) {
       type{function_type{spanify(alloc, uni_bool_args), bool_t}};
 
   for (auto &&primitive : primitives) {
-    id_to_type[stable[primitive.name]] = [&] {
+    id_to_type[symtab[primitive.name]] = [&] {
       switch (primitive.type) {
       case primitive_type::int_int_int:
         return bi_int;
@@ -196,31 +269,45 @@ void typecheck_t::setup_primitive_types(const symbol_table &stable) {
       case primitive_type::unit:
         return unit_t;
       }
-      throw std::invalid_argument{"Invalid enum value"};
+      unreachable();
     }();
   }
 }
 
 } // namespace
 
-void typecheck(std::vector<toplevel_expr> &exprs, const symbol_table &stable,
+bool typecheck(std::vector<toplevel_expr> &exprs, const symbol_table &symtab,
                std::pmr::monotonic_buffer_resource &alloc) {
   typecheck_t functor{alloc};
-  functor.setup_primitive_types(stable);
+  functor.setup_primitive_types(symtab);
   for (auto &expr : exprs) {
     functor.register_typevar(expr.id);
   }
   for (auto &&expr : exprs) {
     type *expr_type = nullptr;
     type *type_expr_type = nullptr;
-    if (expr.value)
+    if (expr.value) {
       expr_type = functor.visit(*expr.value);
+      if (!expr_type) {
+        return false;
+      }
+    }
     if (expr.type_value) {
       type_expr_type = functor.import_type_expr(*expr.type_value);
     }
-    if (expr_type && type_expr_type && !unify(expr_type, type_expr_type))
-      throw std::runtime_error{"Mismatching decl"};
+    if (expr_type && type_expr_type && !unify(expr_type, type_expr_type)) {
+      fprintf(stderr, "%.*s:%d:%d: error: Type mismatch between of type: ",
+              static_cast<int>(std::size(expr.value->sloc.file_name)),
+              std::data(expr.value->sloc.file_name), expr.value->sloc.line,
+              expr.value->sloc.col);
+      print_type(expr_type);
+      fprintf(stderr, "\ninfo: declaration is of type: ");
+      print_type(type_expr_type);
+      fputc('\n', stderr);
+      return false;
+    }
   }
+  return true;
 }
 
 } // namespace lyn

@@ -25,7 +25,7 @@ struct symbol_table;
 std::optional<std::vector<toplevel_expr>>
 parse(FILE *f, std::string_view file_name, compilation_context &cc);
 bool alpha_convert(std::vector<toplevel_expr> &exprs, symbol_table &table);
-void typecheck(std::vector<toplevel_expr> &exprs, const symbol_table &stable,
+bool typecheck(std::vector<toplevel_expr> &exprs, const symbol_table &stable,
                std::pmr::monotonic_buffer_resource &alloc);
 
 struct delete_anf {

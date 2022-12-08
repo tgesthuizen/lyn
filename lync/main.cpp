@@ -23,7 +23,8 @@ exec_frontend(FILE *input, std::string_view file_name,
     return nullptr;
   if (!lyn::alpha_convert(*decls, cc.symtab))
     return nullptr;
-  lyn::typecheck(*decls, cc.symtab, cc.type_alloc);
+  if (!lyn::typecheck(*decls, cc.symtab, cc.type_alloc))
+    return nullptr;
   return lyn::genanf(*decls, cc.stbl, cc.symtab);
 }
 
