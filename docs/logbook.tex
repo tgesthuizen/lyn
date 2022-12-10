@@ -671,4 +671,26 @@ instead of this
 The new code tends to be a lot shorter and also safes a lot of stack
 space and reduces register pressure.
 
+\section{2022-12-10}
+
+\subsection{What happened today?}
+
+Finalized a bugfix where the typechecker failed to check types of
+function declarations.
+This is now corrected.
+It is not perfect yet though, as the definition of a function will be
+unified with the type unified from its usages and declaration.
+This may lead to error messages which seem ``the wrong way around''
+for functions without declarations:
+If the function is used before its definition the error message might
+say that the function definition does not fit the type deduced from
+the call site which location is no longer tracked.
+This is not really helpful for debugging the call site.
+Thankfully this problem does not occur when functions are defined
+before their first usage as required by C or when a declaration is
+present.
+
+Overall I worked on some fortification of the compiler the last few
+days but failed to record what I did precisely.
+
 \end{document}
