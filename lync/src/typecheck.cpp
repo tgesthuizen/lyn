@@ -89,6 +89,9 @@ public:
   void register_typevar(int id) {
     id_to_type[id] = new (alloc_type()) type{type_variable{}};
   }
+  void register_type(int id, type *t) { id_to_type[id] = t; }
+
+  type *get_type_for_id(int id) { return id_to_type.at(id); }
 
   type *import_type_expr(const type_expr &expr) {
     return std::visit(
@@ -281,28 +284,31 @@ bool typecheck(std::vector<toplevel_expr> &exprs, const symbol_table &symtab,
   typecheck_t functor{alloc};
   functor.setup_primitive_types(symtab);
   for (auto &expr : exprs) {
-    functor.register_typevar(expr.id);
+    if (expr.type_value)
+      functor.register_type(expr.id,
+                            functor.import_type_expr(*expr.type_value));
+    else
+      functor.register_typevar(expr.id);
   }
   for (auto &&expr : exprs) {
-    type *expr_type = nullptr;
-    type *type_expr_type = nullptr;
-    if (expr.value) {
-      expr_type = functor.visit(*expr.value);
-      if (!expr_type) {
-        return false;
-      }
-    }
-    if (expr.type_value) {
-      type_expr_type = functor.import_type_expr(*expr.type_value);
-    }
-    if (expr_type && type_expr_type && !unify(expr_type, type_expr_type)) {
-      fprintf(stderr, "%.*s:%d:%d: error: Type mismatch between of type: ",
+    if (!expr.value)
+      continue;
+    type *const expr_type = functor.visit(*expr.value);
+    if (!expr_type)
+      return false;
+    type *const decl_type = functor.get_type_for_id(expr.id);
+    if (!unify(expr_type, decl_type)) {
+      fprintf(stderr,
+              "%.*s:%d:%d: error: Function definition \"%.*s\" is of "
+              "unexpected type:\n"
+              "info: Definition is of type: ",
               static_cast<int>(std::size(expr.value->sloc.file_name)),
               std::data(expr.value->sloc.file_name), expr.value->sloc.line,
-              expr.value->sloc.col);
+              expr.value->sloc.col, static_cast<int>(std::size(expr.name)),
+              std::data(expr.name));
       print_type(expr_type);
-      fprintf(stderr, "\ninfo: declaration is of type: ");
-      print_type(type_expr_type);
+      fprintf(stderr, "\ninfo: Expected type: ");
+      print_type(decl_type);
       fputc('\n', stderr);
       return false;
     }
