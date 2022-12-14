@@ -201,6 +201,7 @@ expr *parse_let(parse_context &ctx, const source_location &sloc) {
     lex(ctx);
     bindings.push_back(std::move(b));
   }
+  lex(ctx);
   res.bindings = spanify(ctx.cc.expr_alloc, bindings);
   std::vector<expr *> exprs;
   while (ctx.cur_tok.t != token::type::rpar) {
