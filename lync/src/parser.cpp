@@ -33,6 +33,51 @@ struct token {
   source_location sloc = {};
 };
 
+void print_token(const token &tok) {
+  switch (tok.t) {
+  case token::type::error:
+    fputs("<error>", stderr);
+    break;
+  case token::type::eof:
+    fputs("<eof>", stderr);
+    break;
+  case token::type::lpar:
+    fputc('(', stderr);
+    break;
+  case token::type::rpar:
+    fputc(')', stderr);
+    break;
+  case token::type::arrow:
+    fputs("->", stderr);
+    break;
+  case token::type::let:
+    fputs("let", stderr);
+    break;
+  case token::type::lambda:
+    fputs("lambda", stderr);
+    break;
+  case token::type::if_:
+    fputs("if", stderr);
+    break;
+  case token::type::define:
+    fputs("define", stderr);
+    break;
+  case token::type::declare:
+    fputs("declare", stderr);
+    break;
+  case token::type::include:
+    fputs("include", stderr);
+    break;
+  case token::type::identifier:
+    fprintf(stderr, "\"%.*s\"", static_cast<int>(std::size(tok.value.s)),
+            std::data(tok.value.s));
+    break;
+  case token::type::number:
+    fprintf(stderr, "%d", tok.value.i);
+    break;
+  }
+}
+
 struct include_return {
   FILE *file;
   source_location sloc;
@@ -156,13 +201,21 @@ expr *parse_expr(parse_context &ctx);
 expr *parse_lambda(parse_context &ctx, const source_location &sloc) {
   lambda_expr res;
   lex(ctx);
-  if (ctx.cur_tok.t != token::type::lpar)
+  if (ctx.cur_tok.t != token::type::lpar) {
+    fprintf(stderr, "%.*s:%d:%d: error: Expected parameter list\n",
+            static_cast<int>(std::size(ctx.sloc.file_name)),
+            std::data(ctx.sloc.file_name), ctx.sloc.line, ctx.sloc.col);
     return nullptr;
+  }
   lex(ctx);
   std::vector<variable_expr> args;
   while (ctx.cur_tok.t != token::type::rpar) {
-    if (ctx.cur_tok.t != token::type::identifier)
+    if (ctx.cur_tok.t != token::type::identifier) {
+      fprintf(stderr, "%.*s:%d:%d: error: Expected parameter name\n",
+              static_cast<int>(std::size(ctx.sloc.file_name)),
+              std::data(ctx.sloc.file_name), ctx.sloc.line, ctx.sloc.col);
       return nullptr;
+    }
     args.push_back(variable_expr{ctx.cur_tok.value.s});
     lex(ctx);
   }
@@ -171,8 +224,12 @@ expr *parse_lambda(parse_context &ctx, const source_location &sloc) {
   res.body = parse_expr(ctx);
   if (!res.body)
     return nullptr;
-  if (ctx.cur_tok.t != token::type::rpar)
+  if (ctx.cur_tok.t != token::type::rpar) {
+    fprintf(stderr, "%.*s:%d:%d: error: Expected closing paren after lambda\n",
+            static_cast<int>(std::size(ctx.sloc.file_name)),
+            std::data(ctx.sloc.file_name), ctx.sloc.line, ctx.sloc.col);
     return nullptr;
+  }
   lex(ctx);
   return make_expr(ctx.cc, std::move(res), sloc);
 }
@@ -180,24 +237,40 @@ expr *parse_lambda(parse_context &ctx, const source_location &sloc) {
 expr *parse_let(parse_context &ctx, const source_location &sloc) {
   let_expr res;
   lex(ctx);
-  if (ctx.cur_tok.t != token::type::lpar)
+  if (ctx.cur_tok.t != token::type::lpar) {
+    fprintf(stderr, "%.*s:%d:%d: error: Expected let binding list\n",
+            static_cast<int>(std::size(ctx.sloc.file_name)),
+            std::data(ctx.sloc.file_name), ctx.sloc.line, ctx.sloc.col);
     return nullptr;
+  }
   lex(ctx);
   std::vector<let_binding> bindings;
   while (ctx.cur_tok.t != token::type::rpar) {
     let_binding b;
-    if (ctx.cur_tok.t != token::type::lpar)
+    if (ctx.cur_tok.t != token::type::lpar) {
+      fprintf(stderr, "%.*s:%d:%d: error: Expected let binding\n",
+              static_cast<int>(std::size(ctx.sloc.file_name)),
+              std::data(ctx.sloc.file_name), ctx.sloc.line, ctx.sloc.col);
       return nullptr;
+    }
     lex(ctx);
-    if (ctx.cur_tok.t != token::type::identifier)
+    if (ctx.cur_tok.t != token::type::identifier) {
+      fprintf(stderr, "%.*s:%d:%d: error: Expected let binding name\n",
+              static_cast<int>(std::size(ctx.sloc.file_name)),
+              std::data(ctx.sloc.file_name), ctx.sloc.line, ctx.sloc.col);
       return nullptr;
+    }
     b.name = ctx.cur_tok.value.s;
     lex(ctx);
     b.body = parse_expr(ctx);
     if (!b.body)
       return nullptr;
-    if (ctx.cur_tok.t != token::type::rpar)
+    if (ctx.cur_tok.t != token::type::rpar) {
+      fprintf(stderr, "%.*s:%d:%d: error: Expected closing paren after let\n",
+              static_cast<int>(std::size(ctx.sloc.file_name)),
+              std::data(ctx.sloc.file_name), ctx.sloc.line, ctx.sloc.col);
       return nullptr;
+    }
     lex(ctx);
     bindings.push_back(std::move(b));
   }
@@ -226,8 +299,13 @@ expr *parse_if(parse_context &ctx, const source_location &sloc) {
   res.els = parse_expr(ctx);
   if (!res.els)
     return nullptr;
-  if (ctx.cur_tok.t != token::type::rpar)
+  if (ctx.cur_tok.t != token::type::rpar) {
+    fprintf(stderr,
+            "%.*s:%d:%d: error: Expected closing paren after conditional\n",
+            static_cast<int>(std::size(ctx.sloc.file_name)),
+            std::data(ctx.sloc.file_name), ctx.sloc.line, ctx.sloc.col);
     return nullptr;
+  }
   lex(ctx);
   return make_expr(ctx.cc, std::move(res), sloc);
 }
@@ -283,6 +361,11 @@ expr *parse_expr(parse_context &ctx) {
   case token::type::define:
   case token::type::declare:
   case token::type::include:
+    fprintf(stderr, "%.*s:%d:%d: error: Unexpected token ",
+            static_cast<int>(std::size(ctx.sloc.file_name)),
+            std::data(ctx.sloc.file_name), ctx.sloc.line, ctx.sloc.col);
+    print_token(ctx.cur_tok);
+    fputc('\n', stderr);
     return nullptr;
   }
   unreachable();
@@ -291,6 +374,9 @@ expr *parse_expr(parse_context &ctx) {
 bool parse_def(parse_context &ctx) {
   lex(ctx);
   if (ctx.cur_tok.t != token::type::identifier) {
+    fprintf(stderr, "%.*s:%d:%d: error: Expected definition name\n",
+            static_cast<int>(std::size(ctx.sloc.file_name)),
+            std::data(ctx.sloc.file_name), ctx.sloc.line, ctx.sloc.col);
     return false;
   }
   const std::string_view name = ctx.cur_tok.value.s;
@@ -305,11 +391,20 @@ bool parse_def(parse_context &ctx) {
       [name](const toplevel_expr &expr) { return expr.name == name; });
   if (iter == end)
     ctx.defines.push_back(toplevel_expr{name, 0, nullptr, ptr});
-  else if (iter->value)
+  else if (iter->value) {
+    fprintf(stderr, "%.*s:%d:%d: error: Duplicate definition of \"%.*s\"\n",
+            static_cast<int>(std::size(ctx.sloc.file_name)),
+            std::data(ctx.sloc.file_name), ctx.sloc.line, ctx.sloc.col,
+            static_cast<int>(std::size(name)), std::data(name));
     return false;
-  else
+  } else
     iter->value = ptr;
   if (ctx.cur_tok.t != token::type::rpar) {
+    fprintf(
+        stderr,
+        "%.*s:%d:%d: error: Expected closing paren after closing definition\n",
+        static_cast<int>(std::size(ctx.sloc.file_name)),
+        std::data(ctx.sloc.file_name), ctx.sloc.line, ctx.sloc.col);
     return false;
   }
   lex(ctx);
