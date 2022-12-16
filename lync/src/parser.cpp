@@ -16,6 +16,7 @@ struct token {
     rpar,
     arrow,
     let,
+    rec,
     lambda,
     if_,
     define,
@@ -52,6 +53,9 @@ void print_token(const token &tok) {
     break;
   case token::type::let:
     fputs("let", stderr);
+    break;
+  case token::type::rec:
+    fputs("rec", stderr);
     break;
   case token::type::lambda:
     fputs("lambda", stderr);
@@ -130,6 +134,10 @@ void lex(parse_context &ctx) {
     }
     if (result == "let") {
       ctx.cur_tok.t = token::type::let;
+      return;
+    }
+    if(result == "rec") {
+      ctx.cur_tok.t = token::type::rec;
       return;
     }
     if (result == "lambda") {
@@ -237,6 +245,10 @@ expr *parse_lambda(parse_context &ctx, const source_location &sloc) {
 expr *parse_let(parse_context &ctx, const source_location &sloc) {
   let_expr res;
   lex(ctx);
+  if(ctx.cur_tok.t == token::type::rec) {
+    res.recursive = true;
+    lex(ctx);
+  }
   if (ctx.cur_tok.t != token::type::lpar) {
     fprintf(stderr, "%.*s:%d:%d: error: Expected let binding list\n",
             static_cast<int>(std::size(ctx.sloc.file_name)),
