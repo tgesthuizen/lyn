@@ -12,7 +12,12 @@ namespace lyn {
 
 namespace {
 
-bool alpha_convert_expr(symbol_table &table, lyn::expr *expr_ptr) {
+struct alpha_convert_expr {
+  bool visit(lyn::expr *expr_ptr);
+  symbol_table &table;
+};
+
+bool alpha_convert_expr::visit(lyn::expr *expr_ptr) {
   return std::visit(
       [&](auto &&expr) {
         using expr_t = std::decay_t<decltype(expr)>;
@@ -30,41 +35,37 @@ bool alpha_convert_expr(symbol_table &table, lyn::expr *expr_ptr) {
           return res;
         }
         if constexpr (std::is_same_v<expr_t, apply_expr>) {
-          return alpha_convert_expr(table, expr.func) &&
+          return visit(expr.func) &&
                  std::all_of(std::begin(expr.args), std::end(expr.args),
-                             [&](auto &&arg) {
-                               return alpha_convert_expr(table, arg);
-                             });
+                             [this](auto &&arg) { return visit(arg); });
         }
         if constexpr (std::is_same_v<expr_t, lambda_expr>) {
           scope current_scope;
           for (auto &&param : expr.params) {
             param.id = table.register_local(param.name, current_scope);
           }
-          const bool result = alpha_convert_expr(table, expr.body) != 0;
+          const bool result = visit(expr.body) != 0;
           table.pop_scope(current_scope);
           return result;
         }
         if constexpr (std::is_same_v<expr_t, let_expr>) {
           if (!std::all_of(std::begin(expr.bindings), std::end(expr.bindings),
-                           [&](auto &&binding) {
-                             return alpha_convert_expr(table, binding.body);
+                           [this](auto &&binding) {
+                             return visit(binding.body);
                            }))
             return false;
           scope current_scope;
           for (auto &&binding : expr.bindings) {
             binding.id = table.register_local(binding.name, current_scope);
           }
-          const bool result = std::all_of(
-              std::begin(expr.body), std::end(expr.body),
-              [&](auto &&ptr) { return alpha_convert_expr(table, ptr); });
+          const bool result =
+              std::all_of(std::begin(expr.body), std::end(expr.body),
+                          [this](auto &&ptr) { return visit(ptr); });
           table.pop_scope(current_scope);
           return result;
         }
         if constexpr (std::is_same_v<expr_t, if_expr>) {
-          return alpha_convert_expr(table, expr.cond) &&
-                 alpha_convert_expr(table, expr.then) &&
-                 alpha_convert_expr(table, expr.els);
+          return visit(expr.cond) && visit(expr.then) && visit(expr.els);
         }
         return true;
       },
@@ -82,8 +83,9 @@ bool alpha_convert(std::vector<toplevel_expr> &exprs, symbol_table &table) {
     decl.id = table.register_global(decl.name);
   }
   table.start_local_registering();
+  alpha_convert_expr ac{table};
   return std::all_of(std::begin(exprs), std::end(exprs), [&](auto &&decl) {
-    return !decl.value || alpha_convert_expr(table, decl.value);
+    return !decl.value || ac.visit(decl.value);
   });
 }
 
