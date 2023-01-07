@@ -129,6 +129,13 @@ private:
   type *unit_t;
 };
 
+bool is_function_type(const type *t) {
+  while (t && std::holds_alternative<type_variable>(t->content)) {
+    t = std::get<type_variable>(t->content).target;
+  }
+  return t && std::holds_alternative<function_type>(t->content);
+}
+
 type *typecheck_t::visit(expr &target) {
   const auto typecheck_value = [this, &target](auto &&expr) -> type * {
     using expr_t = std::decay_t<decltype(expr)>;
@@ -181,7 +188,21 @@ type *typecheck_t::visit(expr &target) {
     }
     if constexpr (std::is_same_v<expr_t, let_expr>) {
       for (auto &&binding : expr.bindings) {
-        id_to_type[binding.id] = visit(*binding.body);
+        const auto &type = visit(*binding.body);
+        if (!type) {
+          return nullptr;
+        }
+        id_to_type[binding.id] = type;
+        if (expr.recursive && !is_function_type(type)) {
+          fprintf(stderr,
+                  "%.*s:%d:%d: error: Letrec binding \"%.*s\" does not refer "
+                  "to a function\n",
+                  static_cast<int>(std::size(target.sloc.file_name)),
+                  std::data(target.sloc.file_name), target.sloc.line,
+                  target.sloc.col, static_cast<int>(std::size(binding.name)),
+                  std::data(binding.name));
+          return nullptr;
+        }
       }
       if (std::empty(expr.body)) {
         return unit_t;

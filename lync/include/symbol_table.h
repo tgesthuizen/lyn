@@ -20,6 +20,7 @@ public:
   int register_primitive(std::string_view name);
   int register_global(std::string_view name);
   int register_local(std::string_view name, scope &current_scope);
+  int reify_local(std::string_view name, int id, scope &current_scope);
   int gen_id() { return next_id++; }
 
   void start_global_registering() { first_global_id = next_id; }
@@ -57,10 +58,14 @@ inline int symbol_table::register_global(std::string_view name) {
 
 inline int symbol_table::register_local(std::string_view name,
                                         scope &current_scope) {
+  return reify_local(name, gen_id(), current_scope);
+}
+
+inline int symbol_table::reify_local(std::string_view name, int id,
+                                     scope &current_scope) {
   if (auto node = name_to_id.extract(name)) {
     current_scope.shadowed_symbols.emplace_back(std::move(node));
   }
-  const int id = gen_id();
   name_to_id[name] = id;
   return id;
 }
