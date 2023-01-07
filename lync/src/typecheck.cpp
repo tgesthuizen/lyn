@@ -5,6 +5,7 @@
 #include "types.h"
 
 #include <algorithm>
+#include <cassert>
 #include <cstdio>
 #include <stdexcept>
 #include <type_traits>
