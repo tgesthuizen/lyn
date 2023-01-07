@@ -46,13 +46,11 @@ bool alpha_convert_expr::visit(lyn::expr *expr_ptr) {
           remaining_funcs.push_back(&expr);
         }
         if constexpr (std::is_same_v<expr_t, let_expr>) {
-          if (expr.recursive) {
+          if (expr.recursive)
             remaining_letrecs.push_back(&expr);
-            return true;
-          }
-          if (!std::all_of(
-                  std::begin(expr.bindings), std::end(expr.bindings),
-                  [this](auto &&binding) { return visit(binding.body); }))
+          else if (!std::all_of(
+                       std::begin(expr.bindings), std::end(expr.bindings),
+                       [this](auto &&binding) { return visit(binding.body); }))
             return false;
           scope current_scope;
           for (auto &&binding : expr.bindings) {
