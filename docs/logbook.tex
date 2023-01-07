@@ -693,4 +693,45 @@ present.
 Overall I worked on some fortification of the compiler the last few
 days but failed to record what I did precisely.
 
+\section{2023-01-07}
+
+\subsection{What happened today?}
+
+Quite some time has passed since the last entry.
+I tried implementing a thing or two in between but was stopped by the
+following issue:
+The way the compiler handeled variabel scoping with functions was
+incorrect.
+This was disguised by a minor error in the parser.
+Solving this issue was surprisingly complicated.
+Furthermore I'm not quite happy with the way it is implemented right
+now.
+The root of the issue is that alpha conversion happens before
+typechecking but different scoping rules apply to an expression of
+function type than other expressions.
+
+It is solved now by the following wonky semantics:
+Local functions can now refer to each other when they are defined in a
+\lstinline{let rec}.
+The context of this declaration is not of relevance however, functions
+bound by prior \lstlinline{let} and \lstinline{let rec} expressions
+will not be visible.
+E.g. this is okay:
+
+\lstinputlisting{../examples/recursive-even-odd.scm}
+
+but this is not:
+
+\begin{lstlisting}
+  (let ((plus2 (lambda (x) (+ x 2))))
+    (let ((plus3 (lambda (x) (+ (plus2 x) 1))))
+      (plus3 2)))
+\end{lstlisting}
+
+In order to get ``proper'' Scheme-like scoping the alpha conversion
+and typechecking passes would need to be merged.
+Which is not impossible, but a bunch of extra work.
+Furthermore it's a pitty because they are so nicely separated in their
+current form.
+
 \end{document}
