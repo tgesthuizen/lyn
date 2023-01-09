@@ -1,4 +1,5 @@
 #include "anf.h"
+#include "constants.h"
 #include "expr.h"
 #include "passes.h"
 #include "symbol_table.h"
@@ -27,14 +28,14 @@ struct local_info {
 class anf_generator {
 public:
   explicit anf_generator(string_table &stbl, const symbol_table &symtab)
-      : stbl{stbl}, symtab{symtab}, next_id{symtab.get_next_id()} {}
+      : stbl{stbl}, symtab{symtab}, next_local_id{symtab.get_next_local_id()},
+        next_global_id{symtab.get_next_global_id()} {}
 
   void push_func(std::string_view name, lambda_expr *ptr) {
     funcs_to_generate.push_back(fun_info{name, *ptr, true});
   }
 
   void run();
-  int get_next_id() const { return next_id; }
   std::unordered_map<int, local_info> get_local_infos() && {
     return std::move(local_infos);
   }
@@ -48,7 +49,8 @@ private:
 
   string_table &stbl;
   const symbol_table &symtab;
-  int next_id;
+  int next_local_id;
+  int next_global_id;
 
   std::unordered_map<int, local_info> local_infos;
   std::vector<fun_info> funcs_to_generate = {};
@@ -83,25 +85,25 @@ int anf_generator::visit_expr(const lyn::expr &value) {
   const auto visit_fun = [this](auto &&expr) {
     using expr_t = std::decay_t<decltype(expr)>;
     if constexpr (std::is_same_v<expr_t, constant_expr>) {
-      const int constant_id = next_id++;
+      const int constant_id = next_local_id++;
       emit_instr(anf_constant{expr.value, constant_id});
       if (tail_pos)
         emit_instr(anf_return{constant_id});
       return constant_id;
     }
     if constexpr (std::is_same_v<expr_t, variable_expr>) {
-      if (expr.id >= symtab.get_first_local_id()) {
+      if (expr.id >= first_local_id) {
         ++local_infos[expr.id].ref_count;
         if (tail_pos)
           emit_instr(anf_return{expr.id});
         return expr.id;
       }
-      const auto global_id = next_id++;
-      emit_instr(anf_global{expr.name, global_id});
-      local_infos[global_id] = {tail_pos ? 1 : 0, expr.name};
+      const auto global_copy = next_local_id++;
+      emit_instr(anf_global{expr.name, global_copy});
+      local_infos[global_copy] = {tail_pos ? 1 : 0, expr.name};
       if (tail_pos)
-        emit_instr(anf_return{global_id});
-      return global_id;
+        emit_instr(anf_return{global_copy});
+      return global_copy;
     }
     if constexpr (std::is_same_v<expr_t, apply_expr>) {
       const bool tail_pos_saved = std::exchange(tail_pos, false);
@@ -117,7 +119,7 @@ int anf_generator::visit_expr(const lyn::expr &value) {
       tail_pos = tail_pos_saved;
       int call_id = 0;
       if (!tail_pos)
-        call_id = next_id++;
+        call_id = next_local_id++;
       decltype(std::declval<anf_call>().call_target) target = fid;
       if (std::holds_alternative<std::string_view>(
               local_infos[fid].rewritable)) {
@@ -129,11 +131,11 @@ int anf_generator::visit_expr(const lyn::expr &value) {
       return call_id;
     }
     if constexpr (std::is_same_v<expr_t, lambda_expr>) {
-      const int lambda_id = next_id++;
-      const auto fun_name = stbl.store("fun" + std::to_string(lambda_id));
+      const int global_id = next_global_id++;
+      const auto fun_name = stbl.store("fun" + std::to_string(global_id));
       funcs_to_generate.push_back(fun_info{fun_name, expr, false});
-      emit_instr(anf_global{fun_name, lambda_id});
-      return lambda_id;
+      emit_instr(anf_global{fun_name, global_id});
+      return global_id;
     }
     if constexpr (std::is_same_v<expr_t, let_expr>) {
       const auto tail_pos_saved = std::exchange(tail_pos, false);
@@ -163,7 +165,7 @@ int anf_generator::visit_expr(const lyn::expr &value) {
       int ret_id = -1;
       if (!tail_pos) {
         current_def->blocks.emplace_back();
-        ret_id = next_id++;
+        ret_id = next_local_id++;
       }
       const int total_blocks = std::size(current_def->blocks);
       const int then_block = total_blocks - 2;
@@ -260,12 +262,14 @@ genanf(std::vector<toplevel_expr> &exprs, string_table &stbl,
     gen.push_func(expr.name, &std::get<lambda_expr>(expr.value->content));
   }
   gen.run();
-  anf_dead_code_elim eliminator{std::move(gen).get_local_infos(),
-                                std::move(gen).get_context()};
-  eliminator.run();
+  // anf_dead_code_elim eliminator{std::move(gen).get_local_infos(),
+  //                               std::move(gen).get_context()};
+  // eliminator.run();
 
+  // return std::unique_ptr<anf_context, delete_anf>{
+  //     new anf_context{std::move(eliminator.ctx)}};
   return std::unique_ptr<anf_context, delete_anf>{
-      new anf_context{std::move(eliminator.ctx)}};
+      new anf_context{std::move(gen).get_context()}};
 }
 
 void delete_anf::operator()(anf_context *ctx) { delete ctx; }

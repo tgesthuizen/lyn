@@ -22,7 +22,7 @@ struct alpha_convert_expr {
 
 bool alpha_convert_expr::visit(lyn::expr *expr_ptr) {
   return std::visit(
-      [&](auto &&expr) {
+      [&](auto &&expr) -> bool {
         using expr_t = std::decay_t<decltype(expr)>;
         if constexpr (std::is_same_v<expr_t, variable_expr>) {
           expr.id = table[expr.name];
@@ -44,6 +44,7 @@ bool alpha_convert_expr::visit(lyn::expr *expr_ptr) {
         }
         if constexpr (std::is_same_v<expr_t, lambda_expr>) {
           remaining_funcs.push_back(&expr);
+          return true;
         }
         if constexpr (std::is_same_v<expr_t, let_expr>) {
           if (expr.recursive)
@@ -106,13 +107,11 @@ bool alpha_convert_expr::process_remaining() {
 
 bool alpha_convert(std::vector<toplevel_expr> &exprs, symbol_table &table) {
   for (auto &&primitive : primitives) {
-    table.register_primitive(primitive.name);
+    table.register_global(primitive.name);
   }
-  table.start_global_registering();
   for (auto &&decl : exprs) {
     decl.id = table.register_global(decl.name);
   }
-  table.start_local_registering();
   alpha_convert_expr ac{table};
   return std::all_of(std::begin(exprs), std::end(exprs),
                      [&](auto &&decl) {

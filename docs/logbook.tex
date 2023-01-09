@@ -734,4 +734,31 @@ Which is not impossible, but a bunch of extra work.
 Furthermore it's a pitty because they are so nicely separated in their
 current form.
 
+Afterwards I was fighting with the code generation because it didn't
+cope well with the new local functions.
+Especially the dead code elimination showed itself to be pretty
+buggy.
+To say it in the words of Donald Knuth, though veeery out of context:
+``Premature optimization is the root of all evil''
+
+\section{2023-01-09}
+
+\subsection{Notes of today}
+
+Further investigations reveal that the current problem is much deeper
+rooted.
+After fixing the most apparent error it turns out that code generation
+fails for various reasons.
+The most fundamental one can be observed with the new
+recursive-even-odd example:
+The functions defined recursively are generated incorrectly as they do
+not reload the other functions defined with them but just defined on
+an existing stack slot holding their address.
+Furthermore, it needs to be forbidden to have functions defined
+anywhere but in \texttt{let rec}s be available in nested, local
+functions.
+Otherwise the lines between local calculations, which fall under the
+no-clojures rule of the language, and proper local function
+definitions is too blurred.
+
 \end{document}
