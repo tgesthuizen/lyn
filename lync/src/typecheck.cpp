@@ -5,7 +5,6 @@
 #include "types.h"
 
 #include <algorithm>
-#include <cassert>
 #include <cstdio>
 #include <stdexcept>
 #include <type_traits>
@@ -130,13 +129,6 @@ private:
   type *unit_t;
 };
 
-bool is_function_type(const type *t) {
-  while (t && std::holds_alternative<type_variable>(t->content)) {
-    t = std::get<type_variable>(t->content).target;
-  }
-  return t && std::holds_alternative<function_type>(t->content);
-}
-
 type *typecheck_t::visit(expr &target) {
   const auto typecheck_value = [this, &target](auto &&expr) -> type * {
     using expr_t = std::decay_t<decltype(expr)>;
@@ -188,48 +180,8 @@ type *typecheck_t::visit(expr &target) {
       return new (alloc_type()) type{function_type{spanify(alloc, args), ret}};
     }
     if constexpr (std::is_same_v<expr_t, let_expr>) {
-      if (expr.recursive)
-        for (auto &&binding : expr.bindings) {
-          id_to_type[binding.id] = new (alloc_type()) type{type_variable{}};
-        }
       for (auto &&binding : expr.bindings) {
-        const auto &type = visit(*binding.body);
-        if (!type) {
-          return nullptr;
-        }
-        if (expr.recursive && !unify(id_to_type[binding.id], type)) {
-          fprintf(stderr,
-                  "%.*s:%d:%d: error: Letrec binding \"%.*s\"s type does not "
-                  "match its declaration\n",
-                  static_cast<int>(std::size(target.sloc.file_name)),
-                  std::data(target.sloc.file_name), target.sloc.line,
-                  target.sloc.col, static_cast<int>(std::size(binding.name)),
-                  std::data(binding.name));
-          fprintf(stderr, "%.*s:%d:%d: info: Binding was assigned the type: ",
-                  static_cast<int>(std::size(target.sloc.file_name)),
-                  std::data(target.sloc.file_name), target.sloc.line,
-                  target.sloc.col);
-          print_type(id_to_type[binding.id]);
-          fputc('\n', stderr);
-          fprintf(stderr, "%.*s:%d:%d: info: Definition has type: ",
-                  static_cast<int>(std::size(target.sloc.file_name)),
-                  std::data(target.sloc.file_name), target.sloc.line,
-                  target.sloc.col);
-          print_type(type);
-          fputc('\n', stderr);
-          return nullptr;
-        }
-        id_to_type[binding.id] = type;
-        if (expr.recursive && !is_function_type(type)) {
-          fprintf(stderr,
-                  "%.*s:%d:%d: error: Letrec binding \"%.*s\" does not refer "
-                  "to a function\n",
-                  static_cast<int>(std::size(target.sloc.file_name)),
-                  std::data(target.sloc.file_name), target.sloc.line,
-                  target.sloc.col, static_cast<int>(std::size(binding.name)),
-                  std::data(binding.name));
-          return nullptr;
-        }
+        id_to_type[binding.id] = visit(*binding.body);
       }
       if (std::empty(expr.body)) {
         return unit_t;

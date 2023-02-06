@@ -1,5 +1,4 @@
 #include "anf.h"
-#include "constants.h"
 
 #include <algorithm>
 #include <cstdio>
@@ -11,9 +10,9 @@ namespace {
 void print_int_list(const std::vector<int> &lst, FILE *out) {
   if (std::empty(lst))
     return;
-  fprintf(out, "%d", lst.front() - first_local_id);
+  fprintf(out, "%d", lst.front());
   std::for_each(std::begin(lst) + 1, std::end(lst),
-                [out](int i) { fprintf(out, ", %d", i - first_local_id); });
+                [out](int i) { fprintf(out, ", %d", i); });
 }
 
 } // namespace
@@ -43,13 +42,11 @@ void print_anf(anf_context &ctx, FILE *out) {
                 fputs("\tadjust_stack\n", out);
               }
               if constexpr (std::is_same_v<val_t, anf_global>) {
-                fprintf(out, "\t%d <- global \"%.*s\"\n",
-                        val.id - first_local_id,
+                fprintf(out, "\t%d <- global \"%.*s\"\n", val.id,
                         static_cast<int>(std::size(val.name)), val.name.data());
               }
               if constexpr (std::is_same_v<val_t, anf_constant>) {
-                fprintf(out, "\t%d <- const %d\n", val.id - first_local_id,
-                        val.value);
+                fprintf(out, "\t%d <- const %d\n", val.id, val.value);
               }
               if constexpr (std::is_same_v<val_t, anf_call>) {
                 if (val.is_tail) {
@@ -58,7 +55,7 @@ void print_anf(anf_context &ctx, FILE *out) {
                       [&](auto &&target) {
                         using target_t = std::decay_t<decltype(target)>;
                         if constexpr (std::is_same_v<target_t, int>) {
-                          fprintf(out, "%d(", target - first_local_id);
+                          fprintf(out, "%d(", target);
                         }
                         if constexpr (std::is_same_v<target_t,
                                                      std::string_view>) {
@@ -71,7 +68,7 @@ void print_anf(anf_context &ctx, FILE *out) {
                   print_int_list(val.arg_ids, out);
                   fputs(")\n", out);
                 } else {
-                  fprintf(out, "\t%d <- call ", val.res_id - first_local_id);
+                  fprintf(out, "\t%d <- call ", val.res_id);
                   std::visit(
                       [&](auto &&target) {
                         using target_t = std::decay_t<decltype(target)>;
@@ -91,17 +88,16 @@ void print_anf(anf_context &ctx, FILE *out) {
                 }
               }
               if constexpr (std::is_same_v<val_t, anf_assoc>) {
-                fprintf(out, "\t%d <- alias %d\n", val.id - first_local_id,
-                        val.alias);
+                fprintf(out, "\t%d <- alias %d\n", val.id, val.alias);
               }
               if constexpr (std::is_same_v<val_t, anf_cond>) {
-                fprintf(out, "\tif %d: %d %d\n", val.cond_id - first_local_id,
-                        val.then_block, val.else_block);
+                fprintf(out, "\tif %d: %d %d\n", val.cond_id, val.then_block,
+                        val.else_block);
               }
               if constexpr (std::is_same_v<val_t, anf_global_assign>) {
                 fprintf(out, "\tassign_global \"%.*s\" <- %d\n",
                         static_cast<int>(std::size(val.name)), val.name.data(),
-                        val.id - first_local_id);
+                        val.id);
               }
               if constexpr (std::is_same_v<val_t, anf_return>) {
                 fprintf(out, "\tret %d\n", val.value);

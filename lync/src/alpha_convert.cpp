@@ -12,17 +12,9 @@ namespace lyn {
 
 namespace {
 
-struct alpha_convert_expr {
-  bool visit(lyn::expr *expr_ptr);
-  bool process_remaining();
-  symbol_table &table;
-  std::vector<let_expr *> remaining_letrecs = {};
-  std::vector<lambda_expr *> remaining_funcs = {};
-};
-
-bool alpha_convert_expr::visit(lyn::expr *expr_ptr) {
+bool alpha_convert_expr(symbol_table &table, lyn::expr *expr_ptr) {
   return std::visit(
-      [&](auto &&expr) -> bool {
+      [&](auto &&expr) {
         using expr_t = std::decay_t<decltype(expr)>;
         if constexpr (std::is_same_v<expr_t, variable_expr>) {
           expr.id = table[expr.name];
@@ -38,86 +30,61 @@ bool alpha_convert_expr::visit(lyn::expr *expr_ptr) {
           return res;
         }
         if constexpr (std::is_same_v<expr_t, apply_expr>) {
-          return visit(expr.func) &&
+          return alpha_convert_expr(table, expr.func) &&
                  std::all_of(std::begin(expr.args), std::end(expr.args),
-                             [this](auto &&arg) { return visit(arg); });
+                             [&](auto &&arg) {
+                               return alpha_convert_expr(table, arg);
+                             });
         }
         if constexpr (std::is_same_v<expr_t, lambda_expr>) {
-          remaining_funcs.push_back(&expr);
-          return true;
+          scope current_scope;
+          for (auto &&param : expr.params) {
+            param.id = table.register_local(param.name, current_scope);
+          }
+          const bool result = alpha_convert_expr(table, expr.body) != 0;
+          table.pop_scope(current_scope);
+          return result;
         }
         if constexpr (std::is_same_v<expr_t, let_expr>) {
-          if (expr.recursive)
-            remaining_letrecs.push_back(&expr);
-          else if (!std::all_of(
-                       std::begin(expr.bindings), std::end(expr.bindings),
-                       [this](auto &&binding) { return visit(binding.body); }))
+          if (!std::all_of(std::begin(expr.bindings), std::end(expr.bindings),
+                           [&](auto &&binding) {
+                             return alpha_convert_expr(table, binding.body);
+                           }))
             return false;
           scope current_scope;
           for (auto &&binding : expr.bindings) {
             binding.id = table.register_local(binding.name, current_scope);
           }
-          const bool result =
-              std::all_of(std::begin(expr.body), std::end(expr.body),
-                          [this](auto &&ptr) { return visit(ptr); });
+          const bool result = std::all_of(
+              std::begin(expr.body), std::end(expr.body),
+              [&](auto &&ptr) { return alpha_convert_expr(table, ptr); });
           table.pop_scope(current_scope);
           return result;
         }
         if constexpr (std::is_same_v<expr_t, if_expr>) {
-          return visit(expr.cond) && visit(expr.then) && visit(expr.els);
+          return alpha_convert_expr(table, expr.cond) &&
+                 alpha_convert_expr(table, expr.then) &&
+                 alpha_convert_expr(table, expr.els);
         }
         return true;
       },
       expr_ptr->content);
 }
 
-bool alpha_convert_expr::process_remaining() {
-  while (true) {
-    if (!remaining_letrecs.empty()) {
-      auto &&elem = remaining_letrecs.front();
-      scope current_scope;
-      for (auto &&binding : elem->bindings) {
-        table.reify_local(binding.name, binding.id, current_scope);
-      }
-      if (!std::all_of(
-              std::begin(elem->bindings), std::end(elem->bindings),
-              [this](auto &&binding) { return visit(binding.body); })) {
-        return false;
-      }
-      table.pop_scope(current_scope);
-      remaining_letrecs.erase(remaining_letrecs.begin());
-    } else if (!remaining_funcs.empty()) {
-      auto &&elem = remaining_funcs.front();
-      scope param_scope;
-      for (auto &&param : elem->params) {
-        param.id = table.register_local(param.name, param_scope);
-      }
-      if (!visit(elem->body)) {
-        return false;
-      }
-      table.pop_scope(param_scope);
-      remaining_funcs.erase(remaining_funcs.begin());
-    } else
-      break;
-  }
-  return true;
-}
-
 } // namespace
 
 bool alpha_convert(std::vector<toplevel_expr> &exprs, symbol_table &table) {
   for (auto &&primitive : primitives) {
-    table.register_global(primitive.name);
+    table.register_primitive(primitive.name);
   }
+  table.start_global_registering();
   for (auto &&decl : exprs) {
     decl.id = table.register_global(decl.name);
   }
-  alpha_convert_expr ac{table};
-  return std::all_of(std::begin(exprs), std::end(exprs),
-                     [&](auto &&decl) {
-                       return !decl.value || ac.visit(decl.value);
-                     }) &&
-         ac.process_remaining();
+  table.start_local_registering();
+  return std::all_of(std::begin(exprs), std::end(exprs), [&](auto &&decl) {
+    return !decl.value || alpha_convert_expr(table, decl.value);
+  });
 }
 
 } // namespace lyn

@@ -55,7 +55,6 @@ struct let_binding {
 struct let_expr {
   span<let_binding> bindings;
   span<expr *> body;
-  bool recursive = false;
 };
 
 struct if_expr {
