@@ -22,7 +22,7 @@ jobs:
     steps:
     - uses: awalsh128/cache-apt-pkgs-action@latest
       with:
-        packages: arm-none-eabi-binutils arm-none-eabi-gcc
+        packages: binutils-arm-none-eabi gcc-arm-none-eabi
         version: 1.0
     
     - uses: actions/checkout@v3
