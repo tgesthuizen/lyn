@@ -24,7 +24,7 @@ jobs:
       with:
         packages: binutils-arm-none-eabi gcc-arm-none-eabi
         version: 1.0
-    
+
     - uses: actions/checkout@v3
 
     - name: Configure CMake
@@ -36,4 +36,5 @@ jobs:
       # Build your program with the given configuration
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
 
-
+    - name: Test
+      run: ctest --test-dir ${{github.workspace}}/build
