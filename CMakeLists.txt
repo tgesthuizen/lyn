@@ -32,3 +32,7 @@ ExternalProject_Add(liblyn
   INSTALL_COMMAND ""
   BUILD_ALWAYS YES
 )
+
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/liblyn/liblyn.a
+  DESTINATION ${CMAKE_INSTALL_PREFIX}/arm-linux-eabi/lib
+)
