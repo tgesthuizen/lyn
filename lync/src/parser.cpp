@@ -313,16 +313,16 @@ expr *parse_if(parse_context &ctx, const source_location &sloc) {
 expr *parse_expr(parse_context &ctx) {
   switch (ctx.cur_tok.t) {
   case token::type::number: {
-    auto res =
+    auto *res =
         make_expr(ctx.cc, constant_expr{ctx.cur_tok.value.i}, ctx.cur_tok.sloc);
     lex(ctx);
-    return std::move(res);
+    return res;
   }
   case token::type::identifier: {
-    auto res =
+    auto *res =
         make_expr(ctx.cc, variable_expr{ctx.cur_tok.value.s}, ctx.cur_tok.sloc);
     lex(ctx);
-    return std::move(res);
+    return res;
   }
   case token::type::lpar: {
     const auto sloc = ctx.cur_tok.sloc;
