@@ -10,7 +10,7 @@ struct derive_pack<Target, type_list<Pack...>> {
   using type = Target<Pack...>;
 };
 template <template <class...> class Target, class Base>
-using derive_pack_t = typename derive_pack<Target, Base>::type;
+using derive_pack_t = derive_pack<Target, Base>::type;
 
 // Taken verbatim from cppreference.com:
 // https://en.cppreference.com/w/cpp/utility/unreachable
