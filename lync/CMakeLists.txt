@@ -20,7 +20,7 @@ target_include_directories(compiler PUBLIC include)
 target_include_directories(compiler PRIVATE
   ${CMAKE_CURRENT_BINARY_DIR}/parser
 )
-target_compile_features(compiler PUBLIC cxx_std_17)
+target_compile_features(compiler PUBLIC cxx_std_23)
 
 add_executable(lync
   main.cpp
