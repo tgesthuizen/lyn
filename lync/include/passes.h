@@ -20,7 +20,7 @@ struct compilation_context {
 struct toplevel_expr;
 struct type;
 struct anf_context;
-struct symbol_table;
+class symbol_table;
 
 std::optional<std::vector<toplevel_expr>>
 parse(FILE *f, std::string_view file_name, compilation_context &cc);
