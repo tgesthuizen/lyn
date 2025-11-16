@@ -1,0 +1,1 @@
+Checks: 'bugprone-*,cppcoreguidelines-*,-cppcoreguidelines-pro-type-vararg,-cppcoreguidelines-pro-bounds-pointer-arithmetic,-cppcoreguidelines-pro-bounds-array-to-pointer-decay,clang-analyzer-*,misc-*,-misc-no-recursion,modernize-*,-modernize-use-trailing-return-type,performance-*,portability-*,readability-*,-readability-identifier-naming'
