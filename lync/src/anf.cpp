@@ -59,8 +59,7 @@ private:
 };
 
 void anf_generator::run() {
-  for (std::size_t i = 0; i < std::size(funcs_to_generate); ++i) {
-    auto &&info = funcs_to_generate[i];
+  for (auto &&info : funcs_to_generate) {
     anf_def new_def;
     new_def.name = info.name;
     anf_receive prologue;
