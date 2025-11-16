@@ -1,4 +1,4 @@
-#ifndef LYN_PRIMTIIVES_H
+#ifndef LYN_PRIMITIVES_H
 #define LYN_PRIMITIVES_H
 
 #include <string_view>
