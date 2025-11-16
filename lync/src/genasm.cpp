@@ -63,7 +63,6 @@ void genasm(anf_context &ctx, FILE *out) {
         std::visit(
             [&](auto &&val) {
               using val_t = std::decay_t<decltype(val)>;
-              local_count = local_count;
               if constexpr (std::is_same_v<val_t, anf_receive>) {
                 if (std::size(val.args) > 4u) {
                   throw std::runtime_error{
