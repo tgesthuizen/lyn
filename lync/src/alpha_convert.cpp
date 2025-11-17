@@ -82,7 +82,7 @@ bool alpha_convert(std::vector<toplevel_expr> &exprs, symbol_table &table) {
     decl.id = table.register_global(decl.name);
   }
   table.start_local_registering();
-  return std::all_of(std::begin(exprs), std::end(exprs), [&](auto &&decl) {
+  return std::ranges::all_of(exprs, [&](auto &&decl) {
     return !decl.value || alpha_convert_expr(table, decl.value);
   });
 }
