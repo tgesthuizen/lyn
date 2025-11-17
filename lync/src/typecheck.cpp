@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <cstdio>
+#include <fmt/printf.h>
 #include <stdexcept>
 #include <type_traits>
 #include <unordered_map>
@@ -153,10 +154,10 @@ type *typecheck_t::visit(expr &target) {
       ft.result = result;
       if (auto *const applied_type = new (cc, type_tag) type{std::move(ft)};
           !unify(applied_type, ftype)) {
-        fprintf(stderr, "%.*s:%d:%d: error: applying function of type ",
-                static_cast<int>(std::size(target.sloc.file_name)),
-                std::data(target.sloc.file_name), target.sloc.line,
-                target.sloc.col);
+        fmt::fprintf(stderr, "%.*s:%d:%d: error: applying function of type ",
+                     static_cast<int>(std::size(target.sloc.file_name)),
+                     std::data(target.sloc.file_name), target.sloc.line,
+                     target.sloc.col);
         print_type(ftype);
         fputs(" where ", stderr);
         print_type(applied_type);
@@ -196,10 +197,10 @@ type *typecheck_t::visit(expr &target) {
       if (!cond_t)
         return nullptr;
       if (!unify(bool_t, cond_t)) {
-        fprintf(stderr, "%.*s:%d:%d: error: Using expression of type ",
-                static_cast<int>(std::size(target.sloc.file_name)),
-                std::data(target.sloc.file_name), target.sloc.line,
-                target.sloc.col);
+        fmt::fprintf(stderr, "%.*s:%d:%d: error: Using expression of type ",
+                     static_cast<int>(std::size(target.sloc.file_name)),
+                     std::data(target.sloc.file_name), target.sloc.line,
+                     target.sloc.col);
         print_type(cond_t);
         fputs(" in if condition\n", stderr);
         return nullptr;
@@ -211,20 +212,20 @@ type *typecheck_t::visit(expr &target) {
       if (!else_t)
         return nullptr;
       if (!unify(then_t, else_t)) {
-        fprintf(stderr, "%.*s:%d:%d: error: if branches do not unify\n",
-                static_cast<int>(std::size(target.sloc.file_name)),
-                std::data(target.sloc.file_name), target.sloc.line,
-                target.sloc.col);
-        fprintf(stderr, "%.*s:%d:%d: info: then branch of type ",
-                static_cast<int>(std::size(expr.then->sloc.file_name)),
-                std::data(expr.then->sloc.file_name), expr.then->sloc.line,
-                expr.then->sloc.col);
+        fmt::fprintf(stderr, "%.*s:%d:%d: error: if branches do not unify\n",
+                     static_cast<int>(std::size(target.sloc.file_name)),
+                     std::data(target.sloc.file_name), target.sloc.line,
+                     target.sloc.col);
+        fmt::fprintf(stderr, "%.*s:%d:%d: info: then branch of type ",
+                     static_cast<int>(std::size(expr.then->sloc.file_name)),
+                     std::data(expr.then->sloc.file_name), expr.then->sloc.line,
+                     expr.then->sloc.col);
         print_type(then_t);
         fputc('\n', stderr);
-        fprintf(stderr, "%.*s:%d:%d: info: else branch of type ",
-                static_cast<int>(std::size(expr.els->sloc.file_name)),
-                std::data(expr.els->sloc.file_name), expr.els->sloc.line,
-                expr.els->sloc.col);
+        fmt::fprintf(stderr, "%.*s:%d:%d: info: else branch of type ",
+                     static_cast<int>(std::size(expr.els->sloc.file_name)),
+                     std::data(expr.els->sloc.file_name), expr.els->sloc.line,
+                     expr.els->sloc.col);
         print_type(else_t);
         fputc('\n', stderr);
         return nullptr;
@@ -296,16 +297,16 @@ bool typecheck(std::vector<toplevel_expr> &exprs, compilation_context &cc) {
       return false;
     type *const decl_type = functor.get_type_for_id(expr.id);
     if (!unify(expr_type, decl_type)) {
-      fprintf(stderr,
-              "%.*s:%d:%d: error: Function definition \"%.*s\" is of "
-              "unexpected type:\n"
-              "info: Definition is of type: ",
-              static_cast<int>(std::size(expr.value->sloc.file_name)),
-              std::data(expr.value->sloc.file_name), expr.value->sloc.line,
-              expr.value->sloc.col, static_cast<int>(std::size(expr.name)),
-              std::data(expr.name));
+      fmt::fprintf(stderr,
+                   "%.*s:%d:%d: error: Function definition \"%.*s\" is of "
+                   "unexpected type:\n"
+                   "info: Definition is of type: ",
+                   static_cast<int>(std::size(expr.value->sloc.file_name)),
+                   std::data(expr.value->sloc.file_name), expr.value->sloc.line,
+                   expr.value->sloc.col, static_cast<int>(std::size(expr.name)),
+                   std::data(expr.name));
       print_type(expr_type);
-      fprintf(stderr, "\ninfo: Expected type: ");
+      fmt::fprintf(stderr, "\ninfo: Expected type: ");
       print_type(decl_type);
       fputc('\n', stderr);
       return false;

@@ -3,6 +3,7 @@
 #include "string_table.h"
 #include "symbol_table.h"
 #include <cstdio>
+#include <fmt/format.h>
 #include <stdexcept>
 #include <unistd.h>
 
@@ -50,7 +51,7 @@ int main(int argc, char **argv) try {
       } else {
         target = fopen(optarg, "w");
         if (!target) {
-          fprintf(stderr, "Could not open output file \"%s\"\n", optarg);
+          fmt::print(stderr, "Could not open output file \"{}\"\n", optarg);
           mode = stop;
           code = 1;
         }
@@ -67,7 +68,7 @@ int main(int argc, char **argv) try {
       mode = stop;
       break;
     default:
-      fprintf(stderr, "Unknown option -%c\n%s", optopt, help_text);
+      fmt::print(stderr, "Unknown option -{}\n{}", optopt, help_text);
       mode = stop;
       code = 1;
       break;
@@ -80,7 +81,8 @@ int main(int argc, char **argv) try {
       input_name = argv[i];
       input = fopen(argv[i], "r");
       if (!input) {
-        fprintf(stderr, "error: Could not open input file \"%s\"\n", argv[i]);
+        fmt::print(stderr, "error: Could not open input file \"{}\"\n",
+                   argv[i]);
         code = 1;
         continue;
       }
@@ -100,8 +102,8 @@ int main(int argc, char **argv) try {
       input = fopen(argv[optind], "r");
       input_name = argv[optind];
       if (!input) {
-        fprintf(stderr, "error: Could not open input file \"%s\"\n",
-                argv[optind]);
+        fmt::print(stderr, "error: Could not open input file \"{}\"\n",
+                   argv[optind]);
         code = 1;
       } else {
         const auto anf_ctx = exec_frontend(input, input_name, cc);
@@ -123,8 +125,9 @@ int main(int argc, char **argv) try {
       input = fopen(argv[optind], "r");
       input_name = argv[optind];
       if (!input) {
-        fprintf(stderr, "error: Could not open input file \"%s\"\n",
-                argv[optind]);
+        fmt::print(stderr, "error: Could not open input file \"{}\"\n",
+                   argv[optind]);
+
         code = 1;
       } else {
         const auto anf_ctx = exec_frontend(input, input_name, cc);
@@ -141,6 +144,6 @@ int main(int argc, char **argv) try {
   }
   return code;
 } catch (const std::exception &e) {
-  fprintf(stderr, "%s\n", e.what());
+  fmt::print(stderr, "{}\n", e.what());
   return -1;
 }

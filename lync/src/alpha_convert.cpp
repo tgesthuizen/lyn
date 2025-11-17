@@ -5,6 +5,7 @@
 
 #include <algorithm>
 #include <cstdio>
+#include <fmt/printf.h>
 #include <string_view>
 #include <unordered_map>
 
@@ -21,11 +22,11 @@ bool alpha_convert_expr(symbol_table &table, lyn::expr *expr_ptr) {
           const bool res = expr.id != 0;
           if (!res) {
             auto &&sloc = expr_ptr->sloc;
-            fprintf(stderr, "%.*s:%d:%d: error: No binding \"%.*s\" in scope\n",
-                    static_cast<int>(std::size(sloc.file_name)),
-                    std::data(sloc.file_name), sloc.line, sloc.col,
-                    static_cast<int>(std::size(expr.name)),
-                    std::data(expr.name));
+            fmt::fprintf(
+                stderr, "%.*s:%d:%d: error: No binding \"%.*s\" in scope\n",
+                static_cast<int>(std::size(sloc.file_name)),
+                std::data(sloc.file_name), sloc.line, sloc.col,
+                static_cast<int>(std::size(expr.name)), std::data(expr.name));
           }
           return res;
         }

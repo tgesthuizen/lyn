@@ -3,6 +3,8 @@
 #include "passes.h"
 #include "symbol_table.h"
 
+#include <fmt/printf.h>
+
 #include <algorithm>
 #include <ranges>
 #include <string_view>
@@ -255,7 +257,7 @@ genanf(std::vector<toplevel_expr> &exprs, string_table &stbl,
     if (!expr.value)
       continue;
     if (!std::holds_alternative<lambda_expr>(expr.value->content)) {
-      fprintf(stderr, "Will not generate anything for %.*s!\n",
+      fmt::fprintf(stderr, "Will not generate anything for %.*s!\n",
               static_cast<int>(std::size(expr.name)), expr.name.data());
       continue;
     }
