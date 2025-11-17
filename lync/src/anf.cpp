@@ -203,27 +203,27 @@ bool anf_dead_code_elim::can_be_deleted(const anf_expr &expr) {
   return std::visit(
       [this](auto &&expr) {
         using expr_t = std::decay_t<decltype(expr)>;
-        if (std::is_same_v<expr_t, anf_receive>)
+        if constexpr (std::is_same_v<expr_t, anf_receive>)
           // Receives cannot be deleted, they are required for stack management
           return false;
-        if (std::is_same_v<expr_t, anf_adjust_stack>)
+        if constexpr (std::is_same_v<expr_t, anf_adjust_stack>)
           return false;
         if constexpr (std::is_same_v<expr_t, anf_global>)
           return local_infos[expr.id].ref_count == 0;
         if constexpr (std::is_same_v<expr_t, anf_constant>)
           return local_infos[expr.id].ref_count == 0;
-        if (std::is_same_v<expr_t, anf_call>)
+        if constexpr (std::is_same_v<expr_t, anf_call>)
           // TODO: We could inspect the call for being side-effect free here
           return false;
         if constexpr (std::is_same_v<expr_t, anf_assoc>)
           return local_infos[expr.id].ref_count == 0;
-        if (std::is_same_v<expr_t, anf_cond>)
+        if constexpr (std::is_same_v<expr_t, anf_cond>)
           return false;
-        if (std::is_same_v<expr_t, anf_return>)
+        if constexpr (std::is_same_v<expr_t, anf_return>)
           return false;
-        if (std::is_same_v<expr_t, anf_jump>)
+        if constexpr (std::is_same_v<expr_t, anf_jump>)
           return false;
-        if (std::is_same_v<expr_t, anf_global_assign>)
+        if constexpr (std::is_same_v<expr_t, anf_global_assign>)
           return false;
       },
       expr);
