@@ -105,8 +105,7 @@ void lex(parse_context &ctx) {
   };
   const auto issym = [](int c) {
     const char valid_chars[] = "!$%&*+-./:<=>?@^_~";
-    return std::any_of(std::begin(valid_chars), std::end(valid_chars),
-                       [c](char c2) { return c == c2; });
+    return std::ranges::any_of(valid_chars, [c](char c2) { return c == c2; });
   };
   const auto isdigit = [](int c) { return c >= '0' && c <= '9'; };
   const auto isspace = [](int c) { return c == ' ' || c == '\t' || c == '\n'; };

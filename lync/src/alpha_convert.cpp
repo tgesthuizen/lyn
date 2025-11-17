@@ -31,10 +31,9 @@ bool alpha_convert_expr(symbol_table &table, lyn::expr *expr_ptr) {
         }
         if constexpr (std::is_same_v<expr_t, apply_expr>) {
           return alpha_convert_expr(table, expr.func) &&
-                 std::all_of(std::begin(expr.args), std::end(expr.args),
-                             [&](auto &&arg) {
-                               return alpha_convert_expr(table, arg);
-                             });
+                 std::ranges::all_of(expr.args, [&](auto &&arg) {
+                   return alpha_convert_expr(table, arg);
+                 });
         }
         if constexpr (std::is_same_v<expr_t, lambda_expr>) {
           scope current_scope;
@@ -46,18 +45,17 @@ bool alpha_convert_expr(symbol_table &table, lyn::expr *expr_ptr) {
           return result;
         }
         if constexpr (std::is_same_v<expr_t, let_expr>) {
-          if (!std::all_of(std::begin(expr.bindings), std::end(expr.bindings),
-                           [&](auto &&binding) {
-                             return alpha_convert_expr(table, binding.body);
-                           }))
+          if (!std::ranges::all_of(expr.bindings, [&](auto &&binding) {
+                return alpha_convert_expr(table, binding.body);
+              }))
             return false;
           scope current_scope;
           for (auto &&binding : expr.bindings) {
             binding.id = table.register_local(binding.name, current_scope);
           }
-          const bool result = std::all_of(
-              std::begin(expr.body), std::end(expr.body),
-              [&](auto &&ptr) { return alpha_convert_expr(table, ptr); });
+          const bool result = std::ranges::all_of(expr.body, [&](auto &&ptr) {
+            return alpha_convert_expr(table, ptr);
+          });
           table.pop_scope(current_scope);
           return result;
         }
