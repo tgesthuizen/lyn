@@ -190,12 +190,6 @@ void lex(parse_context &ctx) {
   ctx.cur_tok.t = token::type::error;
 }
 
-template <class... Args>
-expr *make_expr(compilation_context &cc, Args &&...args) {
-  return new (cc.expr_alloc.allocate(sizeof(expr), alignof(expr)))
-      expr{std::forward<Args>(args)...};
-}
-
 expr *parse_expr(parse_context &ctx);
 
 expr *parse_lambda(parse_context &ctx, const source_location &sloc) {
@@ -231,7 +225,7 @@ expr *parse_lambda(parse_context &ctx, const source_location &sloc) {
     return nullptr;
   }
   lex(ctx);
-  return make_expr(ctx.cc, std::move(res), sloc);
+  return new (ctx.cc, expr_tag) expr{std::move(res), sloc};
 }
 
 expr *parse_let(parse_context &ctx, const source_location &sloc) {
@@ -284,7 +278,7 @@ expr *parse_let(parse_context &ctx, const source_location &sloc) {
   }
   res.body = spanify(ctx.cc.expr_alloc, exprs);
   lex(ctx);
-  return make_expr(ctx.cc, std::move(res), sloc);
+  return new (ctx.cc, expr_tag) expr{std::move(res), sloc};
 }
 
 expr *parse_if(parse_context &ctx, const source_location &sloc) {
@@ -307,20 +301,20 @@ expr *parse_if(parse_context &ctx, const source_location &sloc) {
     return nullptr;
   }
   lex(ctx);
-  return make_expr(ctx.cc, std::move(res), sloc);
+  return new (ctx.cc, expr_tag) expr{std::move(res), sloc};
 }
 
 expr *parse_expr(parse_context &ctx) {
   switch (ctx.cur_tok.t) {
   case token::type::number: {
-    auto *res =
-        make_expr(ctx.cc, constant_expr{ctx.cur_tok.value.i}, ctx.cur_tok.sloc);
+    auto *res = new (ctx.cc, expr_tag)
+        expr{constant_expr{ctx.cur_tok.value.i}, ctx.cur_tok.sloc};
     lex(ctx);
     return res;
   }
   case token::type::identifier: {
-    auto *res =
-        make_expr(ctx.cc, variable_expr{ctx.cur_tok.value.s}, ctx.cur_tok.sloc);
+    auto *res = new (ctx.cc, expr_tag)
+        expr{variable_expr{ctx.cur_tok.value.s}, ctx.cur_tok.sloc};
     lex(ctx);
     return res;
   }
@@ -348,7 +342,7 @@ expr *parse_expr(parse_context &ctx) {
       }
       res.args = spanify(ctx.cc.expr_alloc, args);
       lex(ctx);
-      return make_expr(ctx.cc, std::move(res), sloc);
+      return new (ctx.cc, expr_tag) expr{res, sloc};
     }
   }
   case token::type::error:
@@ -515,3 +509,13 @@ parse(FILE *f, std::string_view file_name, compilation_context &cc) {
 }
 
 } // namespace lyn
+
+void *operator new(std::size_t count, lyn::compilation_context &cc,
+                   [[maybe_unused]] lyn::expr_tag_t tag) {
+  return cc.expr_alloc.allocate(count);
+}
+
+void *operator new(std::size_t count, lyn::compilation_context &cc,
+                   [[maybe_unused]] lyn::type_tag_t tag) {
+  return cc.type_alloc.allocate(count);
+}

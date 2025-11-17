@@ -76,18 +76,18 @@ bool unify(type *lhs, type *rhs) {
 
 class typecheck_t {
 public:
-  explicit typecheck_t(std::pmr::monotonic_buffer_resource &alloc)
-      : alloc{alloc} {
-    int_t = new (alloc_type()) type{int_type{}};
-    bool_t = new (alloc_type()) type{bool_type{}};
-    unit_t = new (alloc_type()) type{unit_type{}};
+  explicit typecheck_t(compilation_context &cc) : cc{cc} {
+    int_t = new (cc, type_tag) type{int_type{}};
+    int_t = new (cc, type_tag) type{int_type{}};
+    bool_t = new (cc, type_tag) type{bool_type{}};
+    unit_t = new (cc, type_tag) type{unit_type{}};
   }
 
   type *visit(expr &target);
 
   void setup_primitive_types(const symbol_table &stable);
   void register_typevar(int id) {
-    id_to_type[id] = new (alloc_type()) type{type_variable{}};
+    id_to_type[id] = new (cc, type_tag) type{type_variable{}};
   }
   void register_type(int id, type *t) { id_to_type[id] = t; }
 
@@ -110,8 +110,8 @@ public:
                 std::begin(type_expr.types), std::end(type_expr.types) - 1,
                 std::back_inserter(args),
                 [this](auto &&expr) { return import_type_expr(*expr); });
-            return new (alloc_type())
-                type{function_type{spanify(alloc, args),
+            return new (cc, type_tag)
+                type{function_type{spanify(cc.type_alloc, args),
                                    import_type_expr(*type_expr.types.back())}};
           }
           unreachable();
@@ -120,9 +120,7 @@ public:
   }
 
 private:
-  void *alloc_type() { return alloc.allocate(sizeof(type), alignof(type)); }
-
-  std::pmr::monotonic_buffer_resource &alloc;
+  compilation_context &cc;
   std::unordered_map<int, type *> id_to_type;
   type *int_t;
   type *bool_t;
@@ -150,10 +148,10 @@ type *typecheck_t::visit(expr &target) {
           return nullptr;
         params.push_back(arg_t);
       }
-      ft.params = spanify(alloc, params);
-      type *const result = new (alloc_type()) type{type_variable{}};
+      ft.params = spanify(cc.type_alloc, params);
+      type *const result = new (cc, type_tag) type{type_variable{}};
       ft.result = result;
-      if (auto *const applied_type = new (alloc_type()) type{std::move(ft)};
+      if (auto *const applied_type = new (cc, type_tag) type{std::move(ft)};
           !unify(applied_type, ftype)) {
         fprintf(stderr, "%.*s:%d:%d: error: applying function of type ",
                 static_cast<int>(std::size(target.sloc.file_name)),
@@ -170,14 +168,15 @@ type *typecheck_t::visit(expr &target) {
     if constexpr (std::is_same_v<expr_t, lambda_expr>) {
       std::vector<type *> args;
       for (auto &&param : expr.params) {
-        type *const arg = new (alloc_type()) type{type_variable{}};
+        type *const arg = new (cc, type_tag) type{type_variable{}};
         id_to_type[param.id] = arg;
         args.push_back(arg);
       }
       auto *const ret = visit(*expr.body);
       if (!ret)
         return nullptr;
-      return new (alloc_type()) type{function_type{spanify(alloc, args), ret}};
+      return new (cc, type_tag)
+          type{function_type{spanify(cc.type_alloc, args), ret}};
     }
     if constexpr (std::is_same_v<expr_t, let_expr>) {
       for (auto &&binding : expr.bindings) {
@@ -240,19 +239,19 @@ void typecheck_t::setup_primitive_types(const symbol_table &symtab) {
   // TODO: Is there really no way to create a std::initializer list for a
   // function template call but to bind the brace init list to an auto variable?
   auto bi_int_args = {int_t, int_t};
-  type *bi_int = new (alloc_type())
-      type{function_type{spanify(alloc, bi_int_args), int_t}};
+  type *bi_int = new (cc, type_tag)
+      type{function_type{spanify(cc.type_alloc, bi_int_args), int_t}};
   auto uni_int_args = {int_t};
-  type *uni_int = new (alloc_type())
-      type{function_type{spanify(alloc, uni_int_args), int_t}};
-  type *comp_int = new (alloc_type())
-      type{function_type{spanify(alloc, bi_int_args), bool_t}};
+  type *uni_int = new (cc, type_tag)
+      type{function_type{spanify(cc.type_alloc, uni_int_args), int_t}};
+  type *comp_int = new (cc, type_tag)
+      type{function_type{spanify(cc.type_alloc, bi_int_args), bool_t}};
   auto bi_bool_args = {bool_t, bool_t};
-  type *bi_bool = new (alloc_type())
-      type{function_type{spanify(alloc, bi_bool_args), bool_t}};
+  type *bi_bool = new (cc, type_tag)
+      type{function_type{spanify(cc.type_alloc, bi_bool_args), bool_t}};
   auto uni_bool_args = {bool_t};
-  type *uni_bool = new (alloc_type())
-      type{function_type{spanify(alloc, uni_bool_args), bool_t}};
+  type *uni_bool = new (cc, type_tag)
+      type{function_type{spanify(cc.type_alloc, uni_bool_args), bool_t}};
 
   for (auto &&primitive : primitives) {
     id_to_type[symtab[primitive.name]] = [&] {
@@ -279,10 +278,9 @@ void typecheck_t::setup_primitive_types(const symbol_table &symtab) {
 
 } // namespace
 
-bool typecheck(std::vector<toplevel_expr> &exprs, const symbol_table &symtab,
-               std::pmr::monotonic_buffer_resource &alloc) {
-  typecheck_t functor{alloc};
-  functor.setup_primitive_types(symtab);
+bool typecheck(std::vector<toplevel_expr> &exprs, compilation_context &cc) {
+  typecheck_t functor{cc};
+  functor.setup_primitive_types(cc.symtab);
   for (auto &expr : exprs) {
     if (expr.type_value)
       functor.register_type(expr.id,

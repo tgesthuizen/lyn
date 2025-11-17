@@ -4,6 +4,7 @@
 #include "symbol_table.h"
 
 #include <algorithm>
+#include <ranges>
 #include <string_view>
 #include <unordered_map>
 #include <utility>
@@ -59,23 +60,25 @@ private:
 };
 
 void anf_generator::run() {
-  for (auto &&info : funcs_to_generate) {
-    anf_def new_def;
-    new_def.name = info.name;
-    anf_receive prologue;
-    prologue.args.reserve(std::size(info.expr.params));
-    std::transform(std::begin(info.expr.params), std::end(info.expr.params),
-                   std::back_inserter(prologue.args),
-                   [](const variable_expr &expr) { return expr.id; });
-    new_def.blocks.emplace_back();
-    current_def = &new_def;
-    current_block = &new_def.blocks.back();
-    emit_instr(std::move(prologue));
-    emit_instr(anf_adjust_stack{});
-    tail_pos = true;
-    visit_expr(*info.expr.body);
-    ctx.defs.emplace_back(std::move(new_def));
-  }
+  ctx.defs = funcs_to_generate | std::views::transform([this](auto &&info) {
+               anf_def new_def;
+               new_def.name = info.name;
+               anf_receive prologue;
+               prologue.args =
+                   info.expr.params |
+                   std::views::transform(
+                       [](const variable_expr &expr) { return expr.id; }) |
+                   std::ranges::to<decltype(prologue.args)>();
+               new_def.blocks.emplace_back();
+               current_def = &new_def;
+               current_block = &new_def.blocks.back();
+               emit_instr(std::move(prologue));
+               emit_instr(anf_adjust_stack{});
+               tail_pos = true;
+               visit_expr(*info.expr.body);
+               return new_def;
+             }) |
+             std::ranges::to<decltype(ctx.defs)>();
 }
 
 int anf_generator::visit_expr(const lyn::expr &value) {

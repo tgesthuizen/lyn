@@ -17,6 +17,11 @@ struct compilation_context {
   std::pmr::monotonic_buffer_resource type_alloc;
 };
 
+struct expr_tag_t {};
+constexpr inline expr_tag_t expr_tag{};
+struct type_tag_t {};
+constexpr inline type_tag_t type_tag{};
+
 struct toplevel_expr;
 struct type;
 struct anf_context;
@@ -25,8 +30,8 @@ class symbol_table;
 std::optional<std::vector<toplevel_expr>>
 parse(FILE *f, std::string_view file_name, compilation_context &cc);
 bool alpha_convert(std::vector<toplevel_expr> &exprs, symbol_table &table);
-bool typecheck(std::vector<toplevel_expr> &exprs, const symbol_table &stable,
-               std::pmr::monotonic_buffer_resource &alloc);
+bool typecheck(std::vector<toplevel_expr> &exprs,
+               compilation_context &cc);
 
 struct delete_anf {
   void operator()(anf_context *ctx);
@@ -39,5 +44,10 @@ void print_anf(anf_context &ctx, FILE *out);
 void genasm(anf_context &ctx, FILE *out);
 
 } // namespace lyn
+
+void *operator new(std::size_t count, lyn::compilation_context &cc,
+                   lyn::expr_tag_t tag);
+void *operator new(std::size_t count, lyn::compilation_context &cc,
+                   lyn::type_tag_t tag);
 
 #endif
